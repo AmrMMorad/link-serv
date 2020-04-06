@@ -1,0 +1,10 @@
+org/bibalex/linkserv/errors/OperationNotFoundException.class
+org/bibalex/linkserv/handlers/JSONHandler.class
+org/bibalex/linkserv/models/Edge.class
+org/bibalex/linkserv/handlers/PropertiesHandler.class
+org/bibalex/linkserv/handlers/Neo4jHandler.class
+org/bibalex/linkserv/MainLinkServ.class
+org/bibalex/linkserv/handlers/WorkspaceNameHandler.class
+org/bibalex/linkserv/models/Node.class
+org/bibalex/linkserv/controllers/LinkServController.class
+org/bibalex/linkserv/services/LinkServService.class

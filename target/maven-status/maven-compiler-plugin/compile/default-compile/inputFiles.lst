@@ -1,0 +1,10 @@
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/controllers/LinkServController.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/errors/OperationNotFoundException.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/handlers/WorkspaceNameHandler.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/handlers/Neo4jHandler.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/MainLinkServ.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/services/LinkServService.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/handlers/JSONHandler.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/handlers/PropertiesHandler.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/models/Edge.java
+/home/ba/IdeaProjects/linkserv/src/main/java/org/bibalex/linkserv/models/Node.java
