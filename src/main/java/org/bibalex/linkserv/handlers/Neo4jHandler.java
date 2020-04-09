@@ -1,14 +1,13 @@
 package org.bibalex.linkserv.handlers;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.bibalex.linkserv.models.Edge;
 import org.bibalex.linkserv.models.Node;
-import org.neo4j.driver.v1.*;
+import org.neo4j.driver.*;
+import org.neo4j.driver.Record;
 
 import java.util.ArrayList;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 
 public class Neo4jHandler {
 
@@ -17,8 +16,6 @@ public class Neo4jHandler {
     private String linkRelationshipType = PropertiesHandler.getProperty("linkRelationshipType");
 
     private Session session;
-
-    private static final Logger LOGGER = LogManager.getLogger(Neo4jHandler.class);
 
     public Session getSession() {
         if (session == null || !session.isOpen()) {
@@ -32,14 +29,12 @@ public class Neo4jHandler {
     // v.version is returned by the query in case of approximation later on
     public Node getRootNode(String url, String timestamp) {
 
-        LOGGER.info("Getting Root Node of URL: " + url + " with Timestamp: " + timestamp);
-
         Node rootNode = null;
         Value parameterValues = parameters("version", timestamp, "url", url);
 
-        String query = "CALL linkserv.getRootNode({url}, {version});";
+        String query = "CALL linkserv.getRootNode($url, $version);";
 
-        StatementResult result = getSession().run(query, parameterValues);
+        Result result = getSession().run(query, parameterValues);
 
         while (result.hasNext()) {
             Record rootNodeRecord = result.next();
@@ -54,14 +49,12 @@ public class Neo4jHandler {
     // get the closest version to the rootNodeVersion, we'll just assume they're the same for now
     public ArrayList<Object> getOutlinkNodes(String nodeName, String nodeVersion) {
 
-        LOGGER.info("Getting Outlinks of Node of URL: " + nodeName + " with Timestamp: " + nodeVersion);
-
         ArrayList<Object> outlinkEntities = new ArrayList();
         Value parameterValues = parameters("name", nodeName, "version", nodeVersion);
 
-        String query = "CALL linkserv.getOutlinkNodes({name}, {version});";
+        String query = "CALL linkserv.getOutlinkNodes($name, $version);";
 
-        StatementResult result = getSession().run(query, parameterValues);
+        Result result = getSession().run(query, parameterValues);
 
         while (result.hasNext()) {
 
@@ -92,10 +85,7 @@ public class Neo4jHandler {
 
     public boolean addNodesAndRelationships(ArrayList<Object> data) {
 
-        LOGGER.info("Update Graph: Adding Nodes and Edges");
-        LOGGER.debug(data);
-
-        ArrayList<String> outlinks = new ArrayList<>();
+        ArrayList<String> outlinks = new ArrayList<String>();
         String url="";
         String timestamp="";
         String query;
@@ -115,15 +105,13 @@ public class Neo4jHandler {
             }
         }
         Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", outlinks);
-        query = "CALL linkserv.addNodesAndRelationships({url},{timestamp},{outlinks})";
+        query = "CALL linkserv.addNodesAndRelationships($url,$timestamp,$outlinks)";
 
-        StatementResult result = getSession().run(query, parameters);
+        Result result = getSession().run(query, parameters);
 
         if (result.hasNext()) {
-            LOGGER.info("Graph Updated Successfully");
             return true;
         } else {
-            LOGGER.info("Could not Update Graph");
             return false;
         }
     }

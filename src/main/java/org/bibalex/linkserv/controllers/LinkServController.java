@@ -25,7 +25,7 @@ public class LinkServController {
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/{workspaceName}")
-    public ResponseEntity<Object> getGraph(@PathVariable("workspaceName") String workspaceName,
+    public ResponseEntity<String> getGraph(@PathVariable("workspaceName") String workspaceName,
                                            @RequestParam String operation,
                                            @RequestParam(required = false, defaultValue = "1") Integer depth) {
 
