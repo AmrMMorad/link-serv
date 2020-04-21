@@ -95,7 +95,7 @@ public class Neo4jHandler {
         LOGGER.info("Update Graph: Adding Nodes and Edges");
         LOGGER.debug(data);
 
-        ArrayList<String> outlinks = new ArrayList<String>();
+        ArrayList<String> outlinks = new ArrayList<>();
         String url="";
         String timestamp="";
         String query;
