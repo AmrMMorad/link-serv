@@ -12,6 +12,7 @@ public class JSONHandler {
 
     private Neo4jHandler neo4jHandler = new Neo4jHandler();
     private ArrayList<Object> data;
+    private ArrayList<JSONObject> results;
     private static final int DEFAULT_ATTRIBUTE_VALUE = 1;
     private static final Logger LOGGER = LogManager.getLogger(JSONHandler.class);
 
@@ -61,12 +62,13 @@ public class JSONHandler {
         Edge edge = new Edge(edgeId, PropertiesHandler.getProperty("linkRelationshipType"),
                 JsonEdgeProperties.getString(PropertiesHandler.getProperty("sourceKey")),
                 JsonEdgeProperties.getString(PropertiesHandler.getProperty("targetKey")));
-//        data.add(edge);
+        data.add(edge);
     }
 
     public ArrayList<JSONObject> getGraph(String url, String timestamp, Integer depth) {
 
-        ArrayList<JSONObject> results = new ArrayList<>();
+        results = new ArrayList<>();
+        ArrayList<String> nodesNames = new ArrayList<>();
         Node rootNode = neo4jHandler.getRootNode(url, timestamp);
 
         // validate presence of all attributes before proceeding to the next level nodes
@@ -78,23 +80,30 @@ public class JSONHandler {
 
         /** get the actual timestamp of the returned root node in case of approximation later on,
          where the given timestamp of the request is not necessarily equal to the actual one returned.**/
-        String nodeName = rootNode.getUrl();
         String nodeVersion = rootNode.getTimestamp();
-
+        nodesNames.add(rootNode.getUrl());
         results.add(addNodeToResults(rootNode));
 
         for(int i = 0; i < depth; i++){
-            ArrayList<Object> outlinkNodes = neo4jHandler.getOutlinkNodes(nodeName, nodeVersion);
-            for(Object nodeMap: outlinkNodes){
-                if(nodeMap.getClass() == Node.class) {
+            nodesNames = getOutlinkNodes(nodesNames,nodeVersion);
+        }
+        return results;
+    }
+
+    private ArrayList<String> getOutlinkNodes(ArrayList<String> nodesNames, String nodeVersion){
+
+        ArrayList<String> outlinkNodes = new ArrayList<>();
+        for(String nodeName : nodesNames) {
+            ArrayList<Object> outlinkData = neo4jHandler.getOutlinkNodes(nodeName, nodeVersion);
+            for (Object nodeMap : outlinkData) {
+                if (nodeMap.getClass() == Node.class) {
                     results.add(addNodeToResults((Node) nodeMap));
-                    nodeName = ((Node) nodeMap).getUrl();
-                }
-                else
+                    outlinkNodes.add(((Node) nodeMap).getUrl());
+                } else
                     results.add(addEdgeToResults((Edge) nodeMap));
             }
         }
-        return results;
+        return outlinkNodes;
     }
 
     private JSONObject addNodeToResults(Node node) {
