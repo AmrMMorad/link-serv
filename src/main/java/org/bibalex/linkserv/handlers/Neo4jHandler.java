@@ -1,5 +1,7 @@
 package org.bibalex.linkserv.handlers;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bibalex.linkserv.models.Edge;
 import org.bibalex.linkserv.models.Node;
 import org.neo4j.driver.*;
@@ -17,17 +19,20 @@ public class Neo4jHandler {
 
     private Session session;
 
+    private static final Logger LOGGER = LogManager.getLogger(Neo4jHandler.class);
+
     public Session getSession() {
         if (session == null || !session.isOpen()) {
             Driver driver = GraphDatabase.driver( PropertiesHandler.getProperty("uri"));
             session = driver.session();
         }
-
         return session;
     }
 
     // v.version is returned by the query in case of approximation later on
     public Node getRootNode(String url, String timestamp) {
+
+        LOGGER.info("Getting Root Node of URL: " + url + " with Timestamp: " + timestamp);
 
         Node rootNode = null;
         Value parameterValues = parameters("version", timestamp, "url", url);
@@ -48,6 +53,8 @@ public class Neo4jHandler {
 
     // get the closest version to the rootNodeVersion, we'll just assume they're the same for now
     public ArrayList<Object> getOutlinkNodes(String nodeName, String nodeVersion) {
+
+        LOGGER.info("Getting Outlinks of Node of URL: " + nodeName + " with Timestamp: " + nodeVersion);
 
         ArrayList<Object> outlinkEntities = new ArrayList();
         Value parameterValues = parameters("name", nodeName, "version", nodeVersion);
@@ -85,6 +92,9 @@ public class Neo4jHandler {
 
     public boolean addNodesAndRelationships(ArrayList<Object> data) {
 
+        LOGGER.info("Update Graph: Adding Nodes and Edges");
+        LOGGER.debug(data);
+
         ArrayList<String> outlinks = new ArrayList<String>();
         String url="";
         String timestamp="";
@@ -110,8 +120,10 @@ public class Neo4jHandler {
         Result result = getSession().run(query, parameters);
 
         if (result.hasNext()) {
+            LOGGER.info("Graph Updated Successfully");
             return true;
         } else {
+            LOGGER.info("Could not Update Graph");
             return false;
         }
     }

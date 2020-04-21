@@ -1,5 +1,7 @@
 package org.bibalex.linkserv.handlers;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bibalex.linkserv.models.Edge;
 import org.bibalex.linkserv.models.Node;
 import org.json.JSONObject;
@@ -11,6 +13,7 @@ public class JSONHandler {
     private Neo4jHandler neo4jHandler = new Neo4jHandler();
     private ArrayList<Object> data;
     private static final int DEFAULT_ATTRIBUTE_VALUE = 1;
+    private static final Logger LOGGER = LogManager.getLogger(JSONHandler.class);
 
     public JSONHandler(){
         this.data= new ArrayList<>();
@@ -20,10 +23,12 @@ public class JSONHandler {
 
         JSONObject jsonData = new JSONObject(jsonLine);
         if(!jsonData.isNull(PropertiesHandler.getProperty("addNodeKey"))){
+            LOGGER.info("Adding Node through Line: " + jsonLine);
             handleNode(jsonData);
         }
         else{
-            handleEdge(jsonData);
+            LOGGER.info("Adding Edge through Line: " + jsonLine);
+//            handleEdge(jsonData);
         }
         return data;
     }
@@ -37,12 +42,14 @@ public class JSONHandler {
             Node node = new Node(nodeId,PropertiesHandler.getProperty("parentNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("labelKey")), null);
             data.add(node);
+            LOGGER.info("Parent Node Added: " + nodeId);
         }
         else{
             Node node = new Node(nodeId, PropertiesHandler.getProperty("versionNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("labelKey")),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("versionKey")));
             data.add(node);
+            LOGGER.info("Version Node Added: " + nodeId);
         }
     }
 
@@ -65,6 +72,7 @@ public class JSONHandler {
         // validate presence of all attributes before proceeding to the next level nodes
         if (rootNode.equals(null) || depth < 1) {
             results.add(new JSONObject());
+            LOGGER.info("No Results Found or Invalid Depth");
             return results;
         }
 
