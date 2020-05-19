@@ -3,6 +3,7 @@ package org.bibalex.linkserv.controllers;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.bibalex.linkserv.errors.OperationNotFoundException;
+import org.bibalex.linkserv.handlers.PropertiesHandler;
 import org.bibalex.linkserv.services.LinkServService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +20,13 @@ public class LinkServController {
 
     @RequestMapping(value = "/{workspaceName}", method = RequestMethod.POST)
     public ResponseEntity<String> updateGraph(@PathVariable("workspaceName") String workspaceName,
-                                              @RequestBody String jsonData,
+                                              @RequestBody String jsonGraph,
                                               @RequestParam String operation) {
 
         LOGGER.info("Updating Graph with Parameters: " + workspaceName);
-        if (operation.equals("updateGraph")) {
+        if (operation.equals(PropertiesHandler.getProperty("updateGraph"))) {
             LOGGER.info("Response Status: 200");
-            return ResponseEntity.ok(linkServService.updateGraph(jsonData));
+            return ResponseEntity.ok(linkServService.updateGraph(jsonGraph));
         } else {
             LOGGER.error("Response Status: 500, Operation Not Found: " + operation);
             throw new OperationNotFoundException(operation);
@@ -38,7 +39,7 @@ public class LinkServController {
                                            @RequestParam(required = false, defaultValue = "1") Integer depth) {
 
         LOGGER.info("Getting Graph with Parameters: " + workspaceName + " and Depth: " + depth);
-        if (operation.equals("getGraph")) {
+        if (operation.equals(PropertiesHandler.getProperty("getGraph"))) {
             LOGGER.info("Response Status: 200");
             return ResponseEntity.ok(linkServService.getGraph(workspaceName, depth));
         } else {

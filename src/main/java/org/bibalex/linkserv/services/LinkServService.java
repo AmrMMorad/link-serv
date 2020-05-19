@@ -31,50 +31,51 @@ public class LinkServService {
 
         String url = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceURL"));
         String timestamp = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceTimestamp"));
-        String jsonString = "";
+        String jsonResponse = "";
 
         LOGGER.info("Get Graph of: " + url + " with Version: " + timestamp + " and Depth: " + depth);
 
-        ArrayList<JSONObject> jsonArray = jsonHandler.getGraph(url, timestamp, depth);
+        ArrayList<JSONObject> graphJsonArray = jsonHandler.getGraph(url, timestamp, depth);
 
-        for(JSONObject json : jsonArray) {
-            jsonString += (json.toString()) + "\n";
+        for(JSONObject json : graphJsonArray) {
+            jsonResponse += (json.toString()) + "\n";
         }
 
-        if (jsonString.isEmpty()) {
+        if (jsonResponse.isEmpty()) {
             LOGGER.info("No Match Found");
         } else {
-            LOGGER.debug("Graph Returned: " + jsonString);
+            LOGGER.debug("Graph Returned: " + jsonResponse);
             LOGGER.info("Returned Match Successfully");
         }
-        return jsonString;
+        return jsonResponse;
     }
 
-    public String updateGraph(String jsonData) {
+    public String updateGraph(String jsonGraph) {
 
         LOGGER.info("Update Graph");
 
         jsonHandler = new JSONHandler();
-        jsonData = URLDecoder.decode(jsonData);
-        if (jsonData.contains("&")) {
-            jsonData = jsonData.split("&")[1];
+        jsonGraph = URLDecoder.decode(jsonGraph);
+        if (jsonGraph.contains("&")) {
+            jsonGraph = jsonGraph.split("&")[1];
         }
-        String[] jsonLines = jsonData.split("\\r");
+        // Gephi uses \\r as splitter between json lines
+        String[] jsonLines = jsonGraph.split("\\r");
         for (String jsonLine : jsonLines) {
             jsonHandler.getProperties(jsonLine);
 
         }
-        boolean done = neo4jHandler.addNodesAndRelationships(jsonHandler.getData());
+        boolean done = neo4jHandler.addNodesAndRelationships(jsonHandler.getGraphData());
         if (done) {
-            jsonData = jsonData.replace("=", "");
-            jsonData = jsonData.replace("\\r", "");
+            jsonGraph = jsonGraph.replace("=", "");
+            jsonGraph = jsonGraph.replace("\\r", "");
 
             LOGGER.info("Graph Updated Successfully");
-            LOGGER.debug("JSON Data: " + jsonData);
-            return jsonData + "\n";
+            LOGGER.debug("JSON Data: " + jsonGraph);
+            return jsonGraph + "\n";
         } else
             LOGGER.info("Could not Update Graph");
-            LOGGER.debug("JSON Data: " + jsonData);
+            LOGGER.debug("JSON Data: " + jsonGraph);
             return "";
     }
 }

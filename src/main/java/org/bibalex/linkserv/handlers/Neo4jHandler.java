@@ -13,13 +13,18 @@ import static org.neo4j.driver.Values.parameters;
 
 public class Neo4jHandler {
 
-    private String versionNodeLabel = PropertiesHandler.getProperty("versionNodeLabel");
-    private String parentNodeLabel = PropertiesHandler.getProperty("parentNodeLabel");
-    private String linkRelationshipType = PropertiesHandler.getProperty("linkRelationshipType");
-
+    private String versionNodeLabel;
+    private String parentNodeLabel;
+    private String linkRelationshipType;
     private Session session;
 
     private static final Logger LOGGER = LogManager.getLogger(Neo4jHandler.class);
+
+    public void Neo4jHandler(){
+        this.versionNodeLabel = PropertiesHandler.getProperty("versionNodeLabel");
+        this.parentNodeLabel = PropertiesHandler.getProperty("parentNodeLabel");
+        this.linkRelationshipType = PropertiesHandler.getProperty("linkRelationshipType");
+    }
 
     public Session getSession() {
         if (session == null || !session.isOpen()) {
@@ -37,7 +42,7 @@ public class Neo4jHandler {
         Node rootNode = null;
         Value parameterValues = parameters("version", timestamp, "url", url);
 
-        String query = "CALL linkserv.getRootNode($url, $version);";
+        String query = "CALL linkserv." + PropertiesHandler.getProperty("getRootNodeProcedure") + "($url, $version);";
 
         Result result = getSession().run(query, parameterValues);
 
@@ -59,7 +64,7 @@ public class Neo4jHandler {
         ArrayList<Object> outlinkEntities = new ArrayList();
         Value parameterValues = parameters("name", nodeName, "version", nodeVersion);
 
-        String query = "CALL linkserv.getOutlinkNodes($name, $version);";
+        String query = "CALL linkserv." + PropertiesHandler.getProperty("getOutlinkNodesProcedure") + "($name, $version);";
 
         Result result = getSession().run(query, parameterValues);
 
@@ -115,7 +120,8 @@ public class Neo4jHandler {
             }
         }
         Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", outlinks);
-        query = "CALL linkserv.addNodesAndRelationships($url,$timestamp,$outlinks)";
+        query = "CALL linkserv." + PropertiesHandler.getProperty("addNodesAndRelationshipsProcedure")
+                +"($url,$timestamp,$outlinks)";
 
         Result result = getSession().run(query, parameters);
 

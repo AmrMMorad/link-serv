@@ -10,14 +10,16 @@ import java.util.ArrayList;
 
 public class JSONHandler {
 
-    private Neo4jHandler neo4jHandler = new Neo4jHandler();
-    private ArrayList<Object> data;
-    private ArrayList<JSONObject> results;
+    private Neo4jHandler neo4jHandler;
+    private ArrayList<Object> graphData;
+    private ArrayList<JSONObject> getGraphResults;
+
     private static final int DEFAULT_ATTRIBUTE_VALUE = 1;
     private static final Logger LOGGER = LogManager.getLogger(JSONHandler.class);
 
     public JSONHandler(){
-        this.data= new ArrayList<>();
+        this.neo4jHandler = new Neo4jHandler();
+        this.graphData = new ArrayList<>();
     }
 
     public ArrayList<Object> getProperties(String jsonLine){
@@ -29,9 +31,9 @@ public class JSONHandler {
         }
         else{
             LOGGER.info("Adding Edge through Line: " + jsonLine);
-//            handleEdge(jsonData);
+            handleEdge(jsonData);
         }
-        return data;
+        return graphData;
     }
 
     private void handleNode(JSONObject jsonData){
@@ -42,14 +44,14 @@ public class JSONHandler {
         if(JsonNodeProperties.isNull(PropertiesHandler.getProperty("versionKey"))) {
             Node node = new Node(nodeId,PropertiesHandler.getProperty("parentNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("labelKey")), null);
-            data.add(node);
+            graphData.add(node);
             LOGGER.info("Parent Node Added: " + nodeId);
         }
         else{
             Node node = new Node(nodeId, PropertiesHandler.getProperty("versionNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("labelKey")),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("versionKey")));
-            data.add(node);
+            graphData.add(node);
             LOGGER.info("Version Node Added: " + nodeId);
         }
     }
@@ -62,32 +64,38 @@ public class JSONHandler {
         Edge edge = new Edge(edgeId, PropertiesHandler.getProperty("linkRelationshipType"),
                 JsonEdgeProperties.getString(PropertiesHandler.getProperty("sourceKey")),
                 JsonEdgeProperties.getString(PropertiesHandler.getProperty("targetKey")));
-        data.add(edge);
+        graphData.add(edge);
     }
 
     public ArrayList<JSONObject> getGraph(String url, String timestamp, Integer depth) {
 
-        results = new ArrayList<>();
+        getGraphResults = new ArrayList<>();
         ArrayList<String> nodesNames = new ArrayList<>();
         Node rootNode = neo4jHandler.getRootNode(url, timestamp);
 
-        // validate presence of all attributes before proceeding to the next level nodes
-        if (rootNode.equals(null) || depth < 1) {
-            results.add(new JSONObject());
+        if (!validatePresenceOfAttributes(rootNode, depth)) {
+            getGraphResults.add(new JSONObject());
             LOGGER.info("No Results Found or Invalid Depth");
-            return results;
+            return getGraphResults;
         }
 
         /** get the actual timestamp of the returned root node in case of approximation later on,
          where the given timestamp of the request is not necessarily equal to the actual one returned.**/
         String nodeVersion = rootNode.getTimestamp();
         nodesNames.add(rootNode.getUrl());
-        results.add(addNodeToResults(rootNode));
+        getGraphResults.add(addNodeToResults(rootNode));
 
         for(int i = 0; i < depth; i++){
             nodesNames = getOutlinkNodes(nodesNames,nodeVersion);
         }
-        return results;
+        return getGraphResults;
+    }
+
+    private boolean validatePresenceOfAttributes(Node rootNode, int depth){
+        if (rootNode.equals(null) || depth < 1){
+            return false;
+        }
+        return true;
     }
 
     private ArrayList<String> getOutlinkNodes(ArrayList<String> nodesNames, String nodeVersion){
@@ -97,10 +105,10 @@ public class JSONHandler {
             ArrayList<Object> outlinkData = neo4jHandler.getOutlinkNodes(nodeName, nodeVersion);
             for (Object nodeMap : outlinkData) {
                 if (nodeMap.getClass() == Node.class) {
-                    results.add(addNodeToResults((Node) nodeMap));
+                    getGraphResults.add(addNodeToResults((Node) nodeMap));
                     outlinkNodes.add(((Node) nodeMap).getUrl());
                 } else
-                    results.add(addEdgeToResults((Edge) nodeMap));
+                    getGraphResults.add(addEdgeToResults((Edge) nodeMap));
             }
         }
         return outlinkNodes;
@@ -148,7 +156,7 @@ public class JSONHandler {
 
     private JSONObject setDefaultNodeAttributes(JSONObject nodeData) {
 
-        String[] attributes = new String[]{"r", "g", "b", "x", "y", "z", "size"};
+        String[] attributes = PropertiesHandler.getProperty("nodeAttributes").split(",");
 
         for(String attribute : attributes) {
             nodeData.put(attribute, DEFAULT_ATTRIBUTE_VALUE);
@@ -156,11 +164,11 @@ public class JSONHandler {
         return nodeData;
     }
 
-    public ArrayList<Object> getData() {
-        return data;
+    public ArrayList<Object> getGraphData() {
+        return graphData;
     }
 
-    public void setData(ArrayList<Object> data) {
-        this.data = data;
+    public void setGraphData(ArrayList<Object> graphData) {
+        this.graphData = graphData;
     }
 }
