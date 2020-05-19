@@ -43,13 +43,13 @@ public class JSONHandler {
         JSONObject JsonNodeProperties = jsonNode.getJSONObject(nodeId);
         if(JsonNodeProperties.isNull(PropertiesHandler.getProperty("versionKey"))) {
             Node node = new Node(nodeId,PropertiesHandler.getProperty("parentNodeLabel"),
-                    JsonNodeProperties.getString(PropertiesHandler.getProperty("labelKey")), null);
+                    JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")), null);
             graphData.add(node);
             LOGGER.info("Parent Node Added: " + nodeId);
         }
         else{
             Node node = new Node(nodeId, PropertiesHandler.getProperty("versionNodeLabel"),
-                    JsonNodeProperties.getString(PropertiesHandler.getProperty("labelKey")),
+                    JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("versionKey")));
             graphData.add(node);
             LOGGER.info("Version Node Added: " + nodeId);
@@ -92,7 +92,7 @@ public class JSONHandler {
     }
 
     private boolean validatePresenceOfAttributes(Node rootNode, int depth){
-        if (rootNode.equals(null) || depth < 1){
+        if (rootNode == null || depth < 1){
             return false;
         }
         return true;

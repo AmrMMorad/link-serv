@@ -17,11 +17,6 @@ public class MainLinkServ extends SpringBootServletInitializer {
     }
 
     public static void main (String [] args){
-        try {
-            PropertiesHandler.initializeProperties();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         SpringApplication.run(MainLinkServ.class, args);
     }
 }

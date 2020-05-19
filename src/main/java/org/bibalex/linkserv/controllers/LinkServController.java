@@ -24,6 +24,7 @@ public class LinkServController {
                                               @RequestParam String operation) {
 
         LOGGER.info("Updating Graph with Parameters: " + workspaceName);
+        PropertiesHandler.initializeProperties();
         if (operation.equals(PropertiesHandler.getProperty("updateGraph"))) {
             LOGGER.info("Response Status: 200");
             return ResponseEntity.ok(linkServService.updateGraph(jsonGraph));
@@ -39,6 +40,7 @@ public class LinkServController {
                                            @RequestParam(required = false, defaultValue = "1") Integer depth) {
 
         LOGGER.info("Getting Graph with Parameters: " + workspaceName + " and Depth: " + depth);
+        PropertiesHandler.initializeProperties();
         if (operation.equals(PropertiesHandler.getProperty("getGraph"))) {
             LOGGER.info("Response Status: 200");
             return ResponseEntity.ok(linkServService.getGraph(workspaceName, depth));
