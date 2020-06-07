@@ -22,6 +22,14 @@ public class WorkspaceNameHandler {
         LOGGER.info("URL: " + workspaceParameters.get("url"));
         LOGGER.info("Timestamp: " + workspaceParameters.get("timestamp"));
 
+        if(!validateURL(workspaceParameters.get("url")))
+            return null;
         return workspaceParameters;
+    }
+
+    private boolean validateURL(String url){
+        if (url.matches("(?:https?:\\/\\/)?(?:[^?\\/\\s]+[?\\/])(.*)"))
+                return true;
+        return false;
     }
 }

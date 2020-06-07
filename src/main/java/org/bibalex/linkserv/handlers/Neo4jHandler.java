@@ -8,6 +8,8 @@ import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.neo4j.driver.Values.parameters;
 
@@ -95,41 +97,47 @@ public class Neo4jHandler {
         return String.valueOf(value).replace("\"", "");
     }
 
-    public boolean addNodesAndRelationships(ArrayList<Object> data) {
+    public boolean addNodesAndRelationships(Map<String, Node> graphNodes, ArrayList<Edge> graphEdges) {
 
         LOGGER.info("Update Graph: Adding Nodes and Edges");
-        LOGGER.debug(data);
+        LOGGER.debug(graphNodes);
 
-        ArrayList<String> outlinks = new ArrayList<>();
-        String url="";
-        String timestamp="";
-        String query;
+        Map<String, ArrayList<String>> nodeWithOutlinks = new HashMap<>();
 
-        for (int i = 0; i < data.size(); i++) {
-            if (data.get(i).getClass() == Node.class) {
-                Node node = (Node) data.get(i);
-
-                if (node.getTimestamp() == null) {
-                    outlinks.add(node.getUrl());
-                } else {
-                    url = node.getUrl();
-                    timestamp = node.getTimestamp();
-                }
-            } else {
-                // Here we will handle multiple timestamps request
-            }
+        for (Edge edge : graphEdges) {
+            String sourceNodeId = edge.getSource();
+            ArrayList<String> outlinks = nodeWithOutlinks.get(sourceNodeId);
+            if(outlinks==null)
+                outlinks = new ArrayList<>();
+            outlinks.add((graphNodes.get(edge.getTarget())).getUrl());
+            nodeWithOutlinks.put(sourceNodeId, outlinks);
         }
-        Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", outlinks);
-        query = "CALL linkserv." + PropertiesHandler.getProperty("addNodesAndRelationshipsProcedure")
-                +"($url,$timestamp,$outlinks)";
+        boolean result = true;
+        for(Map.Entry<String, ArrayList<String>> entry : nodeWithOutlinks.entrySet()) {
+            if (!result){
+                LOGGER.info("Could not Update Graph");
+                return false;
+            }
+            result = addOneNodeWithItsOutlinks(entry, graphNodes);
+        }
+        LOGGER.info("Graph Updated Successfully");
+        return true;
+    }
+
+    private boolean addOneNodeWithItsOutlinks(Map.Entry<String, ArrayList<String>> entry, Map<String, Node> data){
+        String url = (data.get(entry.getKey())).getUrl();
+        String timestamp = (data.get(entry.getKey())).getTimestamp();
+
+        Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", entry.getValue());
+        String query = "CALL linkserv." + PropertiesHandler.getProperty("addNodesAndRelationshipsProcedure")
+                + "($url,$timestamp,$outlinks)";
 
         Result result = getSession().run(query, parameters);
-
         if (result.hasNext()) {
-            LOGGER.info("Graph Updated Successfully");
+            LOGGER.info("Node with url: " + url + " and timestamp: "+ timestamp + " added Successfully");
             return true;
         } else {
-            LOGGER.info("Could not Update Graph");
+            LOGGER.info("Could not add Node with url: " + url + " and timestamp: "+ timestamp);
             return false;
         }
     }

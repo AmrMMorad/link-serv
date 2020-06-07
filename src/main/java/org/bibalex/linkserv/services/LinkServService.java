@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Map;
 
 @Service
-
 public class LinkServService {
 
     private WorkspaceNameHandler workspaceNameHandler = new WorkspaceNameHandler();
@@ -25,9 +24,12 @@ public class LinkServService {
 
     public String getGraph(String workspaceName, Integer depth) {
 
-        jsonHandler = new JSONHandler();
+        jsonHandler = new JSONHandler(false);
 
         Map<String, String> workspaceNameParameters = workspaceNameHandler.splitWorkspaceName(workspaceName);
+
+        if(workspaceNameParameters == null)
+            return PropertiesHandler.getProperty("badRequestResponseStatus");
 
         String url = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceURL"));
         String timestamp = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceTimestamp"));
@@ -50,22 +52,35 @@ public class LinkServService {
         return jsonResponse;
     }
 
-    public String updateGraph(String jsonGraph) {
-
+    public String updateGraph(String jsonGraph, String workspaceName) {
+        boolean done, multipleURLs = false;
+        String url = "";
+        String timestamp = "";
         LOGGER.info("Update Graph");
 
-        jsonHandler = new JSONHandler();
+        if(workspaceName.equals("*"))
+            multipleURLs = true;
+        else{
+            Map<String, String> workspaceNameParameters = workspaceNameHandler.splitWorkspaceName(workspaceName);
+            if(workspaceNameParameters == null)
+                return PropertiesHandler.getProperty("badRequestResponseStatus");
+            url = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceURL"));
+            timestamp = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceTimestamp"));
+        }
+
+        jsonHandler = new JSONHandler(multipleURLs);
         jsonGraph = URLDecoder.decode(jsonGraph);
         if (jsonGraph.contains("&")) {
             jsonGraph = jsonGraph.split("&")[1];
         }
         // Gephi uses \\r as splitter between json lines
-        String[] jsonLines = jsonGraph.split("\\r");
+        String[] jsonLines = jsonGraph.split("\\\\r");
         for (String jsonLine : jsonLines) {
-            jsonHandler.getProperties(jsonLine);
-
+            done  = jsonHandler.addNodesAndEdgesFromJSONLine(jsonLine, url, timestamp);
+            if (!done)
+                return PropertiesHandler.getProperty("badRequestResponseStatus");
         }
-        boolean done = neo4jHandler.addNodesAndRelationships(jsonHandler.getGraphData());
+        done = neo4jHandler.addNodesAndRelationships(jsonHandler.getGraphNodes(), jsonHandler.getGraphEdges());
         if (done) {
             jsonGraph = jsonGraph.replace("=", "");
             jsonGraph = jsonGraph.replace("\\r", "");

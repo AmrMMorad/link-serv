@@ -7,36 +7,44 @@ import org.bibalex.linkserv.models.Node;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JSONHandler {
 
     private Neo4jHandler neo4jHandler;
-    private ArrayList<Object> graphData;
+    private Map<String, Node> graphNodes;
+    private ArrayList<Edge> graphEdges;
+    private boolean multipleURLs;
+    int countVersionNodes;
     private ArrayList<JSONObject> getGraphResults;
 
     private static final int DEFAULT_ATTRIBUTE_VALUE = 1;
     private static final Logger LOGGER = LogManager.getLogger(JSONHandler.class);
 
-    public JSONHandler(){
+    public JSONHandler(boolean multipleURLs){
         this.neo4jHandler = new Neo4jHandler();
-        this.graphData = new ArrayList<>();
+        this.graphNodes = new HashMap<>();
+        this.graphEdges = new ArrayList<>();
+        this.multipleURLs = multipleURLs;
+        this.countVersionNodes = 0;
     }
 
-    public ArrayList<Object> getProperties(String jsonLine){
+    public boolean addNodesAndEdgesFromJSONLine(String jsonLine, String url, String timestamp){
 
         JSONObject jsonData = new JSONObject(jsonLine);
         if(!jsonData.isNull(PropertiesHandler.getProperty("addNodeKey"))){
             LOGGER.info("Adding Node through Line: " + jsonLine);
-            handleNode(jsonData);
+            return handleNode(jsonData, url, timestamp);
         }
         else{
             LOGGER.info("Adding Edge through Line: " + jsonLine);
             handleEdge(jsonData);
+            return true;
         }
-        return graphData;
     }
 
-    private void handleNode(JSONObject jsonData){
+    private boolean handleNode(JSONObject jsonData, String url, String timestamp){
 
         JSONObject jsonNode = jsonData.getJSONObject(PropertiesHandler.getProperty("addNodeKey"));
         String nodeId = jsonNode.keys().next();
@@ -44,16 +52,22 @@ public class JSONHandler {
         if(JsonNodeProperties.isNull(PropertiesHandler.getProperty("versionKey"))) {
             Node node = new Node(nodeId,PropertiesHandler.getProperty("parentNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")), null);
-            graphData.add(node);
+            graphNodes.put(nodeId, node);
             LOGGER.info("Parent Node Added: " + nodeId);
         }
         else{
             Node node = new Node(nodeId, PropertiesHandler.getProperty("versionNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("versionKey")));
-            graphData.add(node);
+            countVersionNodes ++;
+            if(!multipleURLs) {
+                if(countVersionNodes > 1 || !node.getTimestamp().equals(timestamp) || !node.getUrl().equals(url))
+                    return false;
+            }
+            graphNodes.put(nodeId, node);
             LOGGER.info("Version Node Added: " + nodeId);
         }
+        return true;
     }
 
     private void handleEdge(JSONObject jsonData){
@@ -64,7 +78,7 @@ public class JSONHandler {
         Edge edge = new Edge(edgeId, PropertiesHandler.getProperty("linkRelationshipType"),
                 JsonEdgeProperties.getString(PropertiesHandler.getProperty("sourceKey")),
                 JsonEdgeProperties.getString(PropertiesHandler.getProperty("targetKey")));
-        graphData.add(edge);
+        graphEdges.add(edge);
     }
 
     public ArrayList<JSONObject> getGraph(String url, String timestamp, Integer depth) {
@@ -164,11 +178,19 @@ public class JSONHandler {
         return nodeData;
     }
 
-    public ArrayList<Object> getGraphData() {
-        return graphData;
+    public Map<String, Node> getGraphNodes() {
+        return graphNodes;
     }
 
-    public void setGraphData(ArrayList<Object> graphData) {
-        this.graphData = graphData;
+    public void setGraphNodes(Map<String, Node> graphNodes) {
+        this.graphNodes = graphNodes;
+    }
+
+    public ArrayList<Edge> getGraphEdges() {
+        return graphEdges;
+    }
+
+    public void setGraphEdges(ArrayList<Edge> graphEdges) {
+        this.graphEdges = graphEdges;
     }
 }
