@@ -110,6 +110,7 @@ public class Neo4jHandler {
             if(outlinks==null)
                 outlinks = new ArrayList<>();
             outlinks.add((graphNodes.get(edge.getTarget())).getUrl());
+            graphNodes.remove(edge.getTarget());
             nodeWithOutlinks.put(sourceNodeId, outlinks);
         }
         boolean result = true;
@@ -120,15 +121,37 @@ public class Neo4jHandler {
             }
             result = addOneNodeWithItsOutlinks(entry, graphNodes);
         }
+        //if there are nodes not connected with edges
+        for(Map.Entry<String, Node> entry : graphNodes.entrySet()) {
+            if (!result){
+                LOGGER.info("Could not Update Graph");
+                return false;
+            }
+            result = addNodewithItsVersion(entry);
+        }
         LOGGER.info("Graph Updated Successfully");
         return true;
     }
 
-    private boolean addOneNodeWithItsOutlinks(Map.Entry<String, ArrayList<String>> entry, Map<String, Node> data){
-        String url = (data.get(entry.getKey())).getUrl();
-        String timestamp = (data.get(entry.getKey())).getTimestamp();
+    private boolean addOneNodeWithItsOutlinks(Map.Entry<String, ArrayList<String>> entry, Map<String, Node> graphNodes){
+        String url = (graphNodes.get(entry.getKey())).getUrl();
+        String timestamp = (graphNodes.get(entry.getKey())).getTimestamp();
+        graphNodes.remove(entry.getKey());
+        return neo4jAddNodeWithOutlinks(url,timestamp,entry.getValue());
+    }
 
-        Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", entry.getValue());
+    private boolean addNodewithItsVersion(Map.Entry<String, Node> entry){
+        String url = entry.getValue().getUrl();
+        String timestamp = entry.getValue().getTimestamp();
+        //as it is useless to add node without version and edges
+        if(timestamp != null) {
+            return neo4jAddNodeWithOutlinks(url, timestamp, new ArrayList<String>());
+        }
+        return true;
+    }
+
+    private boolean neo4jAddNodeWithOutlinks(String url, String timestamp, ArrayList<String> outlinks){
+        Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", outlinks);
         String query = "CALL linkserv." + PropertiesHandler.getProperty("addNodesAndRelationshipsProcedure")
                 + "($url,$timestamp,$outlinks)";
 

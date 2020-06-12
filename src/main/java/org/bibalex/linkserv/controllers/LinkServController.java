@@ -27,13 +27,14 @@ public class LinkServController {
 
         PropertiesHandler.initializeProperties();
         String requestURL = request.getRequestURL().toString();
-        String workspaceName = requestURL.split(PropertiesHandler.getProperty("repositoryIP"))[1];
+        String [] urlParams= requestURL.split(PropertiesHandler.getProperty("repositoryIP"));
+        String workspaceName = ((urlParams.length==1) ? "*" : urlParams[1]);
         LOGGER.info("Updating Graph with Parameters: " + workspaceName);
         if (operation.equals(PropertiesHandler.getProperty("updateGraph"))) {
             String response = linkServService.updateGraph(jsonGraph, workspaceName);
             if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
                 return ResponseEntity.badRequest().body("Please, Send only one VersionNode with timestamp and URL" +
-                        " typical to those present in the request body");
+                        " typical to those present in the request body.");
             LOGGER.info("Response Status: 200");
             return ResponseEntity.ok(response);
         } else {

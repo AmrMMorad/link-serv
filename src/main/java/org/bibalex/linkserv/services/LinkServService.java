@@ -70,15 +70,17 @@ public class LinkServService {
 
         jsonHandler = new JSONHandler(multipleURLs);
         jsonGraph = URLDecoder.decode(jsonGraph);
-        if (jsonGraph.contains("&")) {
+        if (!jsonGraph.startsWith("{") && jsonGraph.contains("&")) {
             jsonGraph = jsonGraph.split("&")[1];
         }
         // Gephi uses \\r as splitter between json lines
-        String[] jsonLines = jsonGraph.split("\\\\r");
+        String[] jsonLines = jsonGraph.replace("\n","").split("\\r");
         for (String jsonLine : jsonLines) {
-            done  = jsonHandler.addNodesAndEdgesFromJSONLine(jsonLine, url, timestamp);
-            if (!done)
-                return PropertiesHandler.getProperty("badRequestResponseStatus");
+            if(!jsonLine.equals("")) {
+                done = jsonHandler.addNodesAndEdgesFromJSONLine(jsonLine, url, timestamp);
+                if (!done)
+                    return PropertiesHandler.getProperty("badRequestResponseStatus");
+            }
         }
         done = neo4jHandler.addNodesAndRelationships(jsonHandler.getGraphNodes(), jsonHandler.getGraphEdges());
         if (done) {
