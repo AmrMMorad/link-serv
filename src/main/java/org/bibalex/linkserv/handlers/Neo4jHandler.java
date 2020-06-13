@@ -22,7 +22,7 @@ public class Neo4jHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(Neo4jHandler.class);
 
-    public void Neo4jHandler(){
+    public Neo4jHandler(){
         this.versionNodeLabel = PropertiesHandler.getProperty("versionNodeLabel");
         this.parentNodeLabel = PropertiesHandler.getProperty("parentNodeLabel");
         this.linkRelationshipType = PropertiesHandler.getProperty("linkRelationshipType");

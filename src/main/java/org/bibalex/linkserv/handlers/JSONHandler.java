@@ -16,7 +16,7 @@ public class JSONHandler {
     private Map<String, Node> graphNodes;
     private ArrayList<Edge> graphEdges;
     private boolean multipleURLs;
-    int countVersionNodes;
+    int versionNodesCount;
     private ArrayList<JSONObject> getGraphResults;
 
     private static final int DEFAULT_ATTRIBUTE_VALUE = 1;
@@ -27,7 +27,7 @@ public class JSONHandler {
         this.graphNodes = new HashMap<>();
         this.graphEdges = new ArrayList<>();
         this.multipleURLs = multipleURLs;
-        this.countVersionNodes = 0;
+        this.versionNodesCount = 0;
     }
 
     public boolean addNodesAndEdgesFromJSONLine(String jsonLine, String url, String timestamp){
@@ -59,9 +59,9 @@ public class JSONHandler {
             Node node = new Node(nodeId, PropertiesHandler.getProperty("versionNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("versionKey")));
-            countVersionNodes ++;
+            versionNodesCount++;
             if(!multipleURLs) {
-                if(countVersionNodes > 1 || !node.getTimestamp().equals(timestamp) || !node.getUrl().equals(url))
+                if(versionNodesCount > 1 || !node.getTimestamp().equals(timestamp) || !node.getUrl().equals(url))
                     return false;
             }
             graphNodes.put(nodeId, node);
