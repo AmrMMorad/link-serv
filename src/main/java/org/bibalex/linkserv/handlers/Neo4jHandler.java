@@ -9,6 +9,7 @@ import org.neo4j.driver.Record;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.neo4j.driver.Values.parameters;
@@ -151,7 +152,7 @@ public class Neo4jHandler {
     }
 
     private boolean neo4jAddNodeWithOutlinks(String url, String timestamp, ArrayList<String> outlinks){
-        Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", outlinks);
+        Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", convertArrayToJSONArray(outlinks));
         String query = "CALL linkserv." + PropertiesHandler.getProperty("addNodesAndRelationshipsProcedure")
                 + "($url,$timestamp,$outlinks)";
 
@@ -163,5 +164,15 @@ public class Neo4jHandler {
             LOGGER.info("Could not add Node with url: " + url + " and timestamp: "+ timestamp);
             return false;
         }
+    }
+
+    private List<Map<String, Object>> convertArrayToJSONArray(ArrayList<String> outlinks){
+        List<Map<String, Object>> list = new ArrayList<>();
+        for(String url : outlinks){
+            Map<String, Object> stringObjectMap = new HashMap<>();
+            stringObjectMap.put("url", url);
+            list.add(stringObjectMap);
+        }
+        return list;
     }
 }

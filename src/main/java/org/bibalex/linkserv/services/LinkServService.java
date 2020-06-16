@@ -69,7 +69,6 @@ public class LinkServService {
         }
 
         jsonHandler = new JSONHandler(multipleURLs);
-        jsonGraph = URLDecoder.decode(jsonGraph);
         if (!jsonGraph.startsWith("{") && jsonGraph.contains("&")) {
             jsonGraph = jsonGraph.split("&")[1];
         }
