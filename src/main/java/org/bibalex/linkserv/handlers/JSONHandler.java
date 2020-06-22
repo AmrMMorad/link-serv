@@ -12,17 +12,16 @@ import java.util.Map;
 
 public class JSONHandler {
 
+    private static final int DEFAULT_ATTRIBUTE_VALUE = 1;
+    private static final Logger LOGGER = LogManager.getLogger(JSONHandler.class);
+    int versionNodesCount;
     private Neo4jHandler neo4jHandler;
     private Map<String, Node> graphNodes;
     private ArrayList<Edge> graphEdges;
     private boolean multipleURLs;
-    int versionNodesCount;
     private ArrayList<JSONObject> getGraphResults;
 
-    private static final int DEFAULT_ATTRIBUTE_VALUE = 1;
-    private static final Logger LOGGER = LogManager.getLogger(JSONHandler.class);
-
-    public JSONHandler(boolean multipleURLs){
+    public JSONHandler(boolean multipleURLs) {
         this.neo4jHandler = new Neo4jHandler();
         this.graphNodes = new HashMap<>();
         this.graphEdges = new ArrayList<>();
@@ -30,38 +29,36 @@ public class JSONHandler {
         this.versionNodesCount = 0;
     }
 
-    public boolean addNodesAndEdgesFromJSONLine(String jsonLine, String url, String timestamp){
+    public boolean addNodesAndEdgesFromJSONLine(String jsonLine, String url, String timestamp) {
 
         JSONObject jsonData = new JSONObject(jsonLine);
-        if(!jsonData.isNull(PropertiesHandler.getProperty("addNodeKey"))){
+        if (!jsonData.isNull(PropertiesHandler.getProperty("addNodeKey"))) {
             LOGGER.info("Adding Node through Line: " + jsonLine);
             return handleNode(jsonData, url, timestamp);
-        }
-        else{
+        } else {
             LOGGER.info("Adding Edge through Line: " + jsonLine);
             handleEdge(jsonData);
             return true;
         }
     }
 
-    private boolean handleNode(JSONObject jsonData, String url, String timestamp){
+    private boolean handleNode(JSONObject jsonData, String url, String timestamp) {
 
         JSONObject jsonNode = jsonData.getJSONObject(PropertiesHandler.getProperty("addNodeKey"));
         String nodeId = jsonNode.keys().next();
         JSONObject JsonNodeProperties = jsonNode.getJSONObject(nodeId);
-        if(JsonNodeProperties.isNull(PropertiesHandler.getProperty("versionKey"))) {
-            Node node = new Node(nodeId,PropertiesHandler.getProperty("parentNodeLabel"),
+        if (JsonNodeProperties.isNull(PropertiesHandler.getProperty("versionKey"))) {
+            Node node = new Node(nodeId, PropertiesHandler.getProperty("parentNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")), null);
             graphNodes.put(nodeId, node);
             LOGGER.info("Parent Node Added: " + nodeId);
-        }
-        else{
+        } else {
             Node node = new Node(nodeId, PropertiesHandler.getProperty("versionNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("versionKey")));
             versionNodesCount++;
-            if(!multipleURLs) {
-                if(versionNodesCount > 1 || !node.getTimestamp().equals(timestamp) || !node.getUrl().equals(url))
+            if (!multipleURLs) {
+                if (versionNodesCount > 1 || !node.getTimestamp().equals(timestamp) || !node.getUrl().equals(url))
                     return false;
             }
             graphNodes.put(nodeId, node);
@@ -70,7 +67,7 @@ public class JSONHandler {
         return true;
     }
 
-    private void handleEdge(JSONObject jsonData){
+    private void handleEdge(JSONObject jsonData) {
 
         JSONObject jsonEdge = jsonData.getJSONObject(PropertiesHandler.getProperty("addEdgeKey"));
         String edgeId = jsonEdge.keys().next();
@@ -81,41 +78,46 @@ public class JSONHandler {
         graphEdges.add(edge);
     }
 
-    public ArrayList<JSONObject> getGraph(String url, String timestamp, Integer depth) {
+    public ArrayList<JSONObject> getGraph(String url, String startTimestamp, String endTimestamp, Integer depth) {
 
         getGraphResults = new ArrayList<>();
         ArrayList<String> nodesNames = new ArrayList<>();
-        Node rootNode = neo4jHandler.getRootNode(url, timestamp);
+        ArrayList<Node> rootNodes;
 
-        if (!validatePresenceOfAttributes(rootNode, depth)) {
-            getGraphResults.add(new JSONObject());
-            LOGGER.info("No Results Found or Invalid Depth");
-            return getGraphResults;
-        }
+        rootNodes = neo4jHandler.getRootNodes(url, startTimestamp, endTimestamp);
 
-        /** get the actual timestamp of the returned root node in case of approximation later on,
-         where the given timestamp of the request is not necessarily equal to the actual one returned.**/
-        String nodeVersion = rootNode.getTimestamp();
-        nodesNames.add(rootNode.getUrl());
-        getGraphResults.add(addNodeToResults(rootNode));
+        String nodeVersion = "";
+        for (Node rootNode : rootNodes) {
+            if (!validatePresenceOfAttributes(rootNode, depth)) {
+                getGraphResults.add(new JSONObject());
+                LOGGER.info("No Results Found or Invalid Depth");
+                return getGraphResults;
+            }
 
-        for(int i = 0; i < depth; i++){
-            nodesNames = getOutlinkNodes(nodesNames,nodeVersion);
+            /** get the actual timestamp of the returned root node in case of approximation later on,
+             where the given timestamp of the request is not necessarily equal to the actual one returned.**/
+            nodeVersion = rootNode.getTimestamp();
+            nodesNames.add(rootNode.getUrl());
+            getGraphResults.add(addNodeToResults(rootNode));
+
+            for (int i = 0; i < depth; i++) {
+                nodesNames = getOutlinkNodes(nodesNames, nodeVersion);
+            }
         }
         return getGraphResults;
     }
 
-    private boolean validatePresenceOfAttributes(Node rootNode, int depth){
-        if (rootNode == null || depth < 1){
+    private boolean validatePresenceOfAttributes(Node rootNode, int depth) {
+        if (rootNode == null || depth < 1) {
             return false;
         }
         return true;
     }
 
-    private ArrayList<String> getOutlinkNodes(ArrayList<String> nodesNames, String nodeVersion){
+    private ArrayList<String> getOutlinkNodes(ArrayList<String> nodesNames, String nodeVersion) {
 
         ArrayList<String> outlinkNodes = new ArrayList<>();
-        for(String nodeName : nodesNames) {
+        for (String nodeName : nodesNames) {
             ArrayList<Object> outlinkData = neo4jHandler.getOutlinkNodes(nodeName, nodeVersion);
             for (Object nodeMap : outlinkData) {
                 if (nodeMap.getClass() == Node.class) {
@@ -172,7 +174,7 @@ public class JSONHandler {
 
         String[] attributes = PropertiesHandler.getProperty("nodeAttributes").split(",");
 
-        for(String attribute : attributes) {
+        for (String attribute : attributes) {
             nodeData.put(attribute, DEFAULT_ATTRIBUTE_VALUE);
         }
         return nodeData;
@@ -193,4 +195,5 @@ public class JSONHandler {
     public void setGraphEdges(ArrayList<Edge> graphEdges) {
         this.graphEdges = graphEdges;
     }
+
 }

@@ -27,8 +27,8 @@ public class LinkServController {
 
         PropertiesHandler.initializeProperties();
         String requestURL = request.getRequestURL().toString();
-        String [] urlParams= requestURL.split(PropertiesHandler.getProperty("repositoryIP"));
-        String workspaceName = ((urlParams.length==1) ? "*" : urlParams[1]);
+        String [] urlParams = requestURL.split(PropertiesHandler.getProperty("repositoryIP"));
+        String workspaceName = ((urlParams.length == 1) ? "*" : urlParams[1]);
         LOGGER.info("Updating Graph with Parameters: " + workspaceName);
         if (operation.equals(PropertiesHandler.getProperty("updateGraph"))) {
             String response = linkServService.updateGraph(jsonGraph, workspaceName);
@@ -46,16 +46,21 @@ public class LinkServController {
     @RequestMapping(method = RequestMethod.GET, value = "/**")
     public ResponseEntity<String> getGraph(HttpServletRequest request,
                                            @RequestParam String operation,
-                                           @RequestParam(required = false, defaultValue = "1") Integer depth) {
+                                           @RequestParam(required = false, defaultValue = "1") Integer depth,
+                                           @RequestParam(required = false, defaultValue = "") String endTimestamp) {
 
         PropertiesHandler.initializeProperties();
         String requestURL = request.getRequestURL().toString();
         String workspaceName = requestURL.split(PropertiesHandler.getProperty("repositoryIP"))[1];
-        LOGGER.info("Getting Graph with Parameters: " + workspaceName + " and Depth: " + depth);
+        if(endTimestamp.isEmpty())
+            LOGGER.info("Getting graph with parameters: " + workspaceName + " and depth: " + depth);
+        else
+            LOGGER.info("Getting graph with parameters: " + workspaceName + ", end timestamp: " +
+                    endTimestamp + ", and depth: " + depth);
         if (operation.equals(PropertiesHandler.getProperty("getGraph"))) {
-            String response = linkServService.getGraph(workspaceName, depth);
+            String response = linkServService.getGraph(workspaceName, endTimestamp, depth);
             if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
-                return ResponseEntity.badRequest().body("Please, Send a valid URL");
+                return ResponseEntity.badRequest().body("Please, send a valid URL");
             LOGGER.info("Response Status: 200");
             return ResponseEntity.ok(response);
         } else {
