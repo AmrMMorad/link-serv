@@ -36,32 +36,42 @@ public class Neo4jHandler {
         return session;
     }
 
+    //get the root node of the exact given timestamp
+    public ArrayList<Node> getRootNode(String url, String timestamp) {
+        Value parameterValues;
+        String query;
+
+        LOGGER.info("Getting Root Node of URL: " + url + " with Timestamp: " + timestamp);
+        parameterValues = parameters("version", timestamp, "url", url);
+
+        query = "CALL linkserv." + PropertiesHandler.getProperty("getRootNodeProcedure") + "($url, $version);";
+
+        return runGetRootNodeQuery(query, parameterValues);
+    }
+
     //get the root nodes matching a given range of timestamps
     public ArrayList<Node> getRootNodes(String url, String startTimestamp, String endTimestamp) {
         Value parameterValues;
         String query;
+
+        LOGGER.info("Getting root nodes in range: [" + startTimestamp + ", " + endTimestamp + "]");
+        parameterValues = parameters("url", url,
+                "startTimestamp", startTimestamp,
+                "endTimestamp", endTimestamp);
+
+        query = "CALL linkserv." + PropertiesHandler.getProperty("getRootNodesProcedure") +
+                "($url, $startTimestamp, $endTimestamp);";
+
+        return runGetRootNodeQuery(query, parameterValues);
+    }
+
+    private ArrayList<Node> runGetRootNodeQuery(String query, Value parameterValues){
         ArrayList<Node> rootNodes = new ArrayList<>();
         Node rootNode;
-
-        if (endTimestamp.isEmpty()) {
-            LOGGER.info("Getting Root Node of URL: " + url + " with Timestamp: " + startTimestamp);
-            parameterValues = parameters("version", startTimestamp, "url", url);
-
-            query = "CALL linkserv." + PropertiesHandler.getProperty("getRootNodeProcedure") + "($url, $version);";
-        } else {
-            LOGGER.info("Getting root nodes in range: [" + startTimestamp + ", " + endTimestamp + "]");
-            parameterValues = parameters("url", url,
-                    "startTimestamp", startTimestamp,
-                    "endTimestamp", endTimestamp);
-
-            query = "CALL linkserv." + PropertiesHandler.getProperty("getRootNodesProcedure") +
-                    "($url, $startTimestamp, $endTimestamp);";
-        }
 
         Result result = getSession().run(query, parameterValues);
         while (result.hasNext()) {
             Record rootNodeRecord = result.next();
-            System.out.println("Neo4j Handler: " + rootNodeRecord.get("nodeId"));
             rootNode = new Node(convertValueToString(rootNodeRecord.get("nodeId")),
                     versionNodeLabel,
                     convertValueToString(rootNodeRecord.get("parentName")),

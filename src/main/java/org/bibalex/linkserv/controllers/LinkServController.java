@@ -46,19 +46,14 @@ public class LinkServController {
     @RequestMapping(method = RequestMethod.GET, value = "/**")
     public ResponseEntity<String> getGraph(HttpServletRequest request,
                                            @RequestParam String operation,
-                                           @RequestParam(required = false, defaultValue = "1") Integer depth,
-                                           @RequestParam(required = false, defaultValue = "") String endTimestamp) {
+                                           @RequestParam(required = false, defaultValue = "1") Integer depth) {
 
         PropertiesHandler.initializeProperties();
         String requestURL = request.getRequestURL().toString();
         String workspaceName = requestURL.split(PropertiesHandler.getProperty("repositoryIP"))[1];
-        if(endTimestamp.isEmpty())
-            LOGGER.info("Getting graph with parameters: " + workspaceName + " and depth: " + depth);
-        else
-            LOGGER.info("Getting graph with parameters: " + workspaceName + ", end timestamp: " +
-                    endTimestamp + ", and depth: " + depth);
+
         if (operation.equals(PropertiesHandler.getProperty("getGraph"))) {
-            String response = linkServService.getGraph(workspaceName, endTimestamp, depth);
+            String response = linkServService.getGraph(workspaceName, depth);
             if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
                 return ResponseEntity.badRequest().body("Please, send a valid URL");
             LOGGER.info("Response Status: 200");

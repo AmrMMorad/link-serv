@@ -19,7 +19,7 @@ public class JSONHandler {
     private Map<String, Node> graphNodes;
     private ArrayList<Edge> graphEdges;
     private boolean multipleURLs;
-    private ArrayList<JSONObject> getGraphResults;
+    private ArrayList<String> getGraphResults;
 
     public JSONHandler(boolean multipleURLs) {
         this.neo4jHandler = new Neo4jHandler();
@@ -78,18 +78,29 @@ public class JSONHandler {
         graphEdges.add(edge);
     }
 
-    public ArrayList<JSONObject> getGraph(String url, String startTimestamp, String endTimestamp, Integer depth) {
+    public ArrayList<String> getGraph(String url, String timestamp, Integer depth) {
+        return runGetGraphResults(neo4jHandler.getRootNode(url, timestamp), depth);
+    }
 
+    public ArrayList<String> getGraph(String url, String startTimestamp, String endTimestamp, Integer depth) {
+        return runGetGraphResults(neo4jHandler.getRootNodes(url, startTimestamp, endTimestamp), depth);
+    }
+
+    private boolean validatePresenceOfAttributes(Node rootNode, int depth) {
+        if (rootNode == null || depth < 1) {
+            return false;
+        }
+        return true;
+    }
+
+    private ArrayList<String> runGetGraphResults(ArrayList<Node> rootNodes, int depth) {
         getGraphResults = new ArrayList<>();
-        ArrayList<String> nodesNames = new ArrayList<>();
-        ArrayList<Node> rootNodes;
-
-        rootNodes = neo4jHandler.getRootNodes(url, startTimestamp, endTimestamp);
-
         String nodeVersion = "";
+        ArrayList<String> nodesNames = new ArrayList<>();
+
         for (Node rootNode : rootNodes) {
             if (!validatePresenceOfAttributes(rootNode, depth)) {
-                getGraphResults.add(new JSONObject());
+                getGraphResults.add(new JSONObject().toString());
                 LOGGER.info("No Results Found or Invalid Depth");
                 return getGraphResults;
             }
@@ -104,14 +115,8 @@ public class JSONHandler {
                 nodesNames = getOutlinkNodes(nodesNames, nodeVersion);
             }
         }
-        return getGraphResults;
-    }
 
-    private boolean validatePresenceOfAttributes(Node rootNode, int depth) {
-        if (rootNode == null || depth < 1) {
-            return false;
-        }
-        return true;
+        return getGraphResults;
     }
 
     private ArrayList<String> getOutlinkNodes(ArrayList<String> nodesNames, String nodeVersion) {
@@ -130,7 +135,7 @@ public class JSONHandler {
         return outlinkNodes;
     }
 
-    private JSONObject addNodeToResults(Node node) {
+    private String addNodeToResults(Node node) {
 
         JSONObject outlinkNodeData = new JSONObject();
         outlinkNodeData.put(PropertiesHandler.getProperty("nameKey"), node.getUrl());
@@ -145,10 +150,10 @@ public class JSONHandler {
         JSONObject nodeJSON = new JSONObject();
         nodeJSON.put(PropertiesHandler.getProperty("addNodeKey"), fullNode);
 
-        return nodeJSON;
+        return nodeJSON.toString();
     }
 
-    private JSONObject addEdgeToResults(Edge edge) {
+    private String addEdgeToResults(Edge edge) {
 
         JSONObject outlinkEdgeData = new JSONObject();
 
@@ -167,7 +172,7 @@ public class JSONHandler {
         JSONObject edgeJSON = new JSONObject();
         edgeJSON.put(PropertiesHandler.getProperty("addEdgeKey"), fullEdge);
 
-        return edgeJSON;
+        return edgeJSON.toString();
     }
 
     private JSONObject setDefaultNodeAttributes(JSONObject nodeData) {

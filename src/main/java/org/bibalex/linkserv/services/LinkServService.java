@@ -6,11 +6,10 @@ import org.bibalex.linkserv.handlers.JSONHandler;
 import org.bibalex.linkserv.handlers.Neo4jHandler;
 import org.bibalex.linkserv.handlers.PropertiesHandler;
 import org.bibalex.linkserv.handlers.WorkspaceNameHandler;
-import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
-import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
 
 @Service
@@ -22,10 +21,12 @@ public class LinkServService {
 
     private static final Logger LOGGER = LogManager.getLogger(LinkServService.class);
 
-    public String getGraph(String workspaceName, String endTimestamp, Integer depth) {
+    public String getGraph(String workspaceName, Integer depth) {
 
+        String timeRangeDelimiter = PropertiesHandler.getProperty("timeRangeDelimiter");
         jsonHandler = new JSONHandler(false);
-        ArrayList<JSONObject> graphJsonArray = new ArrayList<>();
+
+        ArrayList<String> graphArray;
 
         Map<String, String> workspaceNameParameters = workspaceNameHandler.splitWorkspaceName(workspaceName);
 
@@ -34,26 +35,31 @@ public class LinkServService {
 
         String url = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceURL"));
         String timestamp = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceTimestamp"));
-        String jsonResponse = "";
+        String getGraphResponse = "";
 
-        if(endTimestamp.isEmpty()) {
-            LOGGER.info("Get Graph of: " + url + " with Version: " + timestamp + " and Depth: " + depth);
-        }else{
-            LOGGER.info("Get Graph of: " + url + " in range: ["+ timestamp + ", " +
-                    endTimestamp + "], and Depth: " + depth);
-        }
-        graphJsonArray = jsonHandler.getGraph(url, timestamp, endTimestamp, depth);
-        for(JSONObject json : graphJsonArray) {
-            jsonResponse += (json.toString()) + "\n";
+        if(timestamp.contains(timeRangeDelimiter)){
+            String[] timestamps = timestamp.split(timeRangeDelimiter,2);
+            String startTimestamp = timestamps[0];
+            String endTimestamp = timestamps[1];
+            graphArray = jsonHandler.getGraph(url, startTimestamp, endTimestamp, depth);
+        }else {
+            graphArray = jsonHandler.getGraph(url, timestamp, depth);
         }
 
-        if (jsonResponse.isEmpty()) {
+        HashSet<String> uniqueGraphArray = new HashSet<>();
+        uniqueGraphArray.addAll(graphArray);
+
+        for(String graphElement : uniqueGraphArray) {
+            getGraphResponse += graphElement + "\n";
+        }
+
+        if (getGraphResponse.isEmpty()) {
             LOGGER.info("No Match Found");
         } else {
-            LOGGER.debug("Graph Returned: " + jsonResponse);
+            LOGGER.debug("Graph Returned: " + getGraphResponse);
             LOGGER.info("Returned Match Successfully");
         }
-        return jsonResponse;
+        return getGraphResponse;
     }
 
     public String updateGraph(String jsonGraph, String workspaceName) {
