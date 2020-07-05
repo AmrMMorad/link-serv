@@ -21,6 +21,7 @@ public class JSONHandler {
     private ArrayList<Edge> graphEdges;
     private boolean multipleURLs;
     private ArrayList<String> getGraphResults;
+    private int latestVersionDepth = Integer.parseInt(PropertiesHandler.getProperty("latestVersionDepth"));
 
     public JSONHandler(boolean multipleURLs) {
         this.neo4jHandler = new Neo4jHandler();
@@ -204,12 +205,27 @@ public class JSONHandler {
         return convertHistogramArrayToJson(histogramEntries);
     }
 
-    private String convertHistogramArrayToJson(ArrayList<HistogramEntry> histogramEntries){
+    private String convertHistogramArrayToJson(ArrayList<HistogramEntry> histogramEntries) {
         JSONObject histogramJson = new JSONObject();
-        for(HistogramEntry histogramEntry : histogramEntries){
+        for (HistogramEntry histogramEntry : histogramEntries) {
             histogramJson.put(String.valueOf(histogramEntry.getKey()), histogramEntry.getCount());
         }
         return histogramJson.toString();
+    }
+
+    public ArrayList<String> getVersions(String url, String dateTime) {
+        ArrayList<Node> versionNodes = neo4jHandler.getVersions(url, dateTime);
+        ArrayList<String> nodeVersions = new ArrayList<>();
+
+        for(Node versionNode: versionNodes){
+            nodeVersions.add(versionNode.getTimestamp());
+        }
+        return nodeVersions;
+    }
+
+    public ArrayList<String> getLatestVersion(String url) {
+        Node latestVersionNode = neo4jHandler.getLatestVersion(url).get(0);
+        return getGraph(latestVersionNode.getUrl(), latestVersionNode.getTimestamp(), latestVersionDepth);
     }
 
     public Map<String, Node> getGraphNodes() {
@@ -227,5 +243,4 @@ public class JSONHandler {
     public void setGraphEdges(ArrayList<Edge> graphEdges) {
         this.graphEdges = graphEdges;
     }
-
 }

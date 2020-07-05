@@ -6,6 +6,7 @@ import org.bibalex.linkserv.handlers.JSONHandler;
 import org.bibalex.linkserv.handlers.Neo4jHandler;
 import org.bibalex.linkserv.handlers.PropertiesHandler;
 import org.bibalex.linkserv.handlers.WorkspaceNameHandler;
+
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -30,36 +31,49 @@ public class LinkServService {
 
         Map<String, String> workspaceNameParameters = workspaceNameHandler.splitWorkspaceName(workspaceName);
 
-        if(workspaceNameParameters == null)
+        if (workspaceNameParameters == null)
             return PropertiesHandler.getProperty("badRequestResponseStatus");
 
         String url = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceURL"));
         String timestamp = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceTimestamp"));
-        String getGraphResponse = "";
 
-        if(timestamp.contains(timeRangeDelimiter)){
-            String[] timestamps = timestamp.split(timeRangeDelimiter,2);
+        if (timestamp.contains(timeRangeDelimiter)) {
+            String[] timestamps = timestamp.split(timeRangeDelimiter, 2);
             String startTimestamp = timestamps[0];
             String endTimestamp = timestamps[1];
             graphArray = jsonHandler.getGraph(url, startTimestamp, endTimestamp, depth);
-        }else {
+        } else {
             graphArray = jsonHandler.getGraph(url, timestamp, depth);
         }
 
         HashSet<String> uniqueGraphArray = new HashSet<>();
         uniqueGraphArray.addAll(graphArray);
 
-        for(String graphElement : uniqueGraphArray) {
-            getGraphResponse += graphElement + "\n";
-        }
+        return formulateResponse(new ArrayList<>(uniqueGraphArray), "\n");
+    }
 
-        if (getGraphResponse.isEmpty()) {
+    public String getVersions(String url, String dateTime) {
+        jsonHandler = new JSONHandler(false);
+        return formulateResponse(jsonHandler.getVersions(url, dateTime), ",");
+    }
+
+    public String getLatestVersion(String url) {
+        jsonHandler = new JSONHandler(false);
+        return formulateResponse(jsonHandler.getLatestVersion(url), "\n");
+    }
+
+    private String formulateResponse(ArrayList<String> stringResponse, String delimiter) {
+        String response = stringResponse.remove(0);
+        for (String responseObject : stringResponse) {
+            response += delimiter + responseObject;
+        }
+        if (response.isEmpty()) {
             LOGGER.info("No Match Found");
         } else {
-            LOGGER.debug("Graph Returned: " + getGraphResponse);
+            LOGGER.debug("Graph Returned: " + response);
             LOGGER.info("Returned Match Successfully");
         }
-        return getGraphResponse;
+        return response;
     }
 
     public String updateGraph(String jsonGraph, String workspaceName) {
@@ -68,11 +82,11 @@ public class LinkServService {
         String timestamp = "";
         LOGGER.info("Update Graph");
 
-        if(workspaceName.equals("*"))
+        if (workspaceName.equals("*"))
             multipleURLs = true;
-        else{
+        else {
             Map<String, String> workspaceNameParameters = workspaceNameHandler.splitWorkspaceName(workspaceName);
-            if(workspaceNameParameters == null)
+            if (workspaceNameParameters == null)
                 return PropertiesHandler.getProperty("badRequestResponseStatus");
             url = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceURL"));
             timestamp = workspaceNameParameters.get(PropertiesHandler.getProperty("workspaceTimestamp"));
@@ -83,9 +97,9 @@ public class LinkServService {
             jsonGraph = jsonGraph.split("&")[1];
         }
         // Gephi uses \\r as splitter between json lines
-        String[] jsonLines = jsonGraph.replace("\n","").split("\\r");
+        String[] jsonLines = jsonGraph.replace("\n", "").split("\\r");
         for (String jsonLine : jsonLines) {
-            if(!jsonLine.equals("")) {
+            if (!jsonLine.equals("")) {
                 done = jsonHandler.addNodesAndEdgesFromJSONLine(jsonLine, url, timestamp);
                 if (!done)
                     return PropertiesHandler.getProperty("badRequestResponseStatus");
@@ -101,8 +115,8 @@ public class LinkServService {
             return jsonGraph + "\n";
         } else
             LOGGER.info("Could not Update Graph");
-            LOGGER.debug("JSON Data: " + jsonGraph);
-            return "";
+        LOGGER.debug("JSON Data: " + jsonGraph);
+        return "";
     }
 
     public String getVersionCountYearly(String url){
