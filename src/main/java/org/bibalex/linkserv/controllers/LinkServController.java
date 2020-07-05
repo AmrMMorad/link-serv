@@ -44,23 +44,38 @@ public class LinkServController {
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/**")
-    public ResponseEntity<String> getGraph(HttpServletRequest request,
+    public ResponseEntity<String> getOperations(HttpServletRequest request,
                                            @RequestParam String operation,
-                                           @RequestParam(required = false, defaultValue = "1") Integer depth) {
+                                           @RequestParam(required = false, defaultValue = "1") Integer depth,
+                                           @RequestParam(required = false) Integer year,
+                                           @RequestParam(required = false) Integer month,
+                                           @RequestParam(required = false) Integer day,
+                                           @RequestParam(required = false) String dateTime) {
 
         PropertiesHandler.initializeProperties();
         String requestURL = request.getRequestURL().toString();
         String workspaceName = requestURL.split(PropertiesHandler.getProperty("repositoryIP"))[1];
 
-        if (operation.equals(PropertiesHandler.getProperty("getGraph"))) {
-            String response = linkServService.getGraph(workspaceName, depth);
-            if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
-                return ResponseEntity.badRequest().body("Please, send a valid URL");
-            LOGGER.info("Response Status: 200");
-            return ResponseEntity.ok(response);
-        } else {
-            LOGGER.error("Response Status: 500, Operation Not Found: " + operation);
-            throw new OperationNotFoundException(operation);
+        switch(operation){
+            case "getGraph":
+                String response = linkServService.getGraph(workspaceName, depth);
+                if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
+                    return ResponseEntity.badRequest().body("Please, send a valid URL");
+                LOGGER.info("Response Status: 200");
+                return ResponseEntity.ok(response);
+
+            case "getVersions":
+                if(dateTime == null || !(dateTime.matches("[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])")))
+                    return ResponseEntity.badRequest().body("Please, send a valid date-time");
+                else
+                    return ResponseEntity.ok(linkServService.getVersions(workspaceName, dateTime));
+
+            case "getLatestVersion":
+                return ResponseEntity.ok(linkServService.getLatestVersion(workspaceName));
+
+            default:
+                LOGGER.error("Response Status: 500, Operation Not Found: " + operation);
+                throw new OperationNotFoundException(operation);
         }
     }
 }

@@ -46,7 +46,7 @@ public class Neo4jHandler {
 
         query = "CALL linkserv." + PropertiesHandler.getProperty("getRootNodeProcedure") + "($url, $version);";
 
-        return runGetRootNodeQuery(query, parameterValues);
+        return runGetNodeQuery(query, parameterValues);
     }
 
     //get the root nodes matching a given range of timestamps
@@ -62,23 +62,45 @@ public class Neo4jHandler {
         query = "CALL linkserv." + PropertiesHandler.getProperty("getRootNodesProcedure") +
                 "($url, $startTimestamp, $endTimestamp);";
 
-        return runGetRootNodeQuery(query, parameterValues);
+        return runGetNodeQuery(query, parameterValues);
     }
 
-    private ArrayList<Node> runGetRootNodeQuery(String query, Value parameterValues){
-        ArrayList<Node> rootNodes = new ArrayList<>();
-        Node rootNode;
+    public ArrayList<Node> getVersions(String url, String dateTime) {
+        Value parameterValues;
+        String query;
+
+        parameterValues = parameters("url", url, "dateTime", dateTime);
+        query = "CALL linkserv." + PropertiesHandler.getProperty("getVersionsProcedure") +
+                "($url, $dateTime);";
+
+        return runGetNodeQuery(query, parameterValues);
+    }
+
+    public ArrayList<Node> getLatestVersion(String url) {
+        Value parameterValues;
+        String query;
+
+        parameterValues = parameters("url", url);
+        query = "CALL linkserv." + PropertiesHandler.getProperty("getLatestVersionProcedure") +
+                "($url);";
+
+        return runGetNodeQuery(query, parameterValues);
+    }
+
+    private ArrayList<Node> runGetNodeQuery(String query, Value parameterValues){
+        ArrayList<Node> resultNodes = new ArrayList<>();
+        Node resultNode;
 
         Result result = getSession().run(query, parameterValues);
         while (result.hasNext()) {
             Record rootNodeRecord = result.next();
-            rootNode = new Node(convertValueToString(rootNodeRecord.get("nodeId")),
+            resultNode = new Node(convertValueToString(rootNodeRecord.get("nodeId")),
                     versionNodeLabel,
-                    convertValueToString(rootNodeRecord.get("parentName")),
+                    convertValueToString(rootNodeRecord.get("nodeURL")),
                     convertValueToString(rootNodeRecord.get("versionName")));
-            rootNodes.add(rootNode);
+            resultNodes.add(resultNode);
         }
-        return rootNodes;
+        return resultNodes;
     }
 
     // get the closest version to the rootNodeVersion, we'll just assume they're the same for now
