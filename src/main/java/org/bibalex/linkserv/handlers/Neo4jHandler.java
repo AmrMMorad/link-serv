@@ -3,6 +3,7 @@ package org.bibalex.linkserv.handlers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bibalex.linkserv.models.Edge;
+import org.bibalex.linkserv.models.HistogramEntry;
 import org.bibalex.linkserv.models.Node;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
@@ -196,5 +197,36 @@ public class Neo4jHandler {
             list.add(stringObjectMap);
         }
         return list;
+    }
+
+    public ArrayList<HistogramEntry> getVersionCountYearly(String url) {
+        Value parameters = parameters("url", url);
+        String query = "CALL linkserv." + PropertiesHandler.getProperty("getVersionCountYearlyProcedure") + "($url)";
+        return getNeo4jResultAndCovertToHistogram(parameters, query);
+    }
+
+    public ArrayList<HistogramEntry> getVersionCountMonthly(String url, int year) {
+        Value parameters = parameters("url", url, "year", year);
+        String query = "CALL linkserv." + PropertiesHandler.getProperty("getVersionCountMonthlyProcedure") + "($url,$year)";
+        return getNeo4jResultAndCovertToHistogram(parameters, query);
+    }
+
+    public ArrayList<HistogramEntry> getVersionCountDaily(String url, int year, int month) {
+        Value parameters = parameters("url", url, "year", year, "month", month);
+        String query = "CALL linkserv." + PropertiesHandler.getProperty("getVersionCountDailyProcedure") + "($url,$year,$month)";
+        return getNeo4jResultAndCovertToHistogram(parameters, query);
+    }
+
+    private ArrayList<HistogramEntry> getNeo4jResultAndCovertToHistogram(Value parameters, String query){
+        ArrayList<HistogramEntry> histogramEntries = new ArrayList<>();
+        Result result = getSession().run(query, parameters);
+
+        while(result.hasNext()){
+            Record histogramRecord = result.next();
+            HistogramEntry histogramEntry = new HistogramEntry(histogramRecord.get("key").asInt(),
+                    histogramRecord.get("count").asInt());
+            histogramEntries.add(histogramEntry);
+        }
+        return histogramEntries;
     }
 }

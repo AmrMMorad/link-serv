@@ -44,23 +44,46 @@ public class LinkServController {
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/**")
-    public ResponseEntity<String> getGraph(HttpServletRequest request,
-                                           @RequestParam String operation,
-                                           @RequestParam(required = false, defaultValue = "1") Integer depth) {
+    public ResponseEntity<String> getOperations(HttpServletRequest request,
+                                                @RequestParam String operation,
+                                                @RequestParam(required = false, defaultValue = "1") Integer depth,
+                                                @RequestParam(required = false) Integer year,
+                                                @RequestParam(required = false) Integer month) {
 
         PropertiesHandler.initializeProperties();
         String requestURL = request.getRequestURL().toString();
         String workspaceName = requestURL.split(PropertiesHandler.getProperty("repositoryIP"))[1];
+        String response = "";
 
-        if (operation.equals(PropertiesHandler.getProperty("getGraph"))) {
-            String response = linkServService.getGraph(workspaceName, depth);
-            if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
-                return ResponseEntity.badRequest().body("Please, send a valid URL");
-            LOGGER.info("Response Status: 200");
-            return ResponseEntity.ok(response);
-        } else {
-            LOGGER.error("Response Status: 500, Operation Not Found: " + operation);
-            throw new OperationNotFoundException(operation);
+        switch(operation){
+            case "getGraph":
+                response = linkServService.getGraph(workspaceName, depth);
+                if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
+                    return ResponseEntity.badRequest().body("Please, send a valid URL");
+                LOGGER.info("Response Status: 200");
+                return ResponseEntity.ok(response);
+
+            case "getVersionCountYearly":
+                response = linkServService.getVersionCountYearly(workspaceName);
+                return ResponseEntity.ok(response);
+
+            case "getVersionCountMonthly":
+                if(year == null)
+                    return ResponseEntity.badRequest().body("Please, send a valid year");
+                else
+                    response = linkServService.getVersionCountMonthly(workspaceName, year);
+                    return ResponseEntity.ok(response);
+
+            case "getVersionCountDaily":
+                if(year == null || month == null || month < 1 || month > 12)
+                    return ResponseEntity.badRequest().body("Please, send a valid year, month");
+                else
+                    response = linkServService.getVersionCountDaily(workspaceName, year, month);
+                    return ResponseEntity.ok(response);
+
+            default:
+                LOGGER.error("Response Status: 500, Operation Not Found: " + operation);
+                throw new OperationNotFoundException(operation);
         }
     }
 }

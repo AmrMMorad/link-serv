@@ -3,6 +3,7 @@ package org.bibalex.linkserv.handlers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bibalex.linkserv.models.Edge;
+import org.bibalex.linkserv.models.HistogramEntry;
 import org.bibalex.linkserv.models.Node;
 import org.json.JSONObject;
 
@@ -183,6 +184,32 @@ public class JSONHandler {
             nodeData.put(attribute, DEFAULT_ATTRIBUTE_VALUE);
         }
         return nodeData;
+    }
+
+    public String getVersionCountYearly(String url) {
+
+        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountYearly(url);
+        return convertHistogramArrayToJson(histogramEntries);
+    }
+
+    public String getVersionCountMonthly(String url, int year) {
+
+        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountMonthly(url, year);
+        return convertHistogramArrayToJson(histogramEntries);
+    }
+
+    public String getVersionCountDaily(String url, int year, int month) {
+
+        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountDaily(url, year, month);
+        return convertHistogramArrayToJson(histogramEntries);
+    }
+
+    private String convertHistogramArrayToJson(ArrayList<HistogramEntry> histogramEntries){
+        JSONObject histogramJson = new JSONObject();
+        for(HistogramEntry histogramEntry : histogramEntries){
+            histogramJson.put(String.valueOf(histogramEntry.getKey()), histogramEntry.getCount());
+        }
+        return histogramJson.toString();
     }
 
     public Map<String, Node> getGraphNodes() {

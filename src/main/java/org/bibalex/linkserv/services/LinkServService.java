@@ -104,4 +104,22 @@ public class LinkServService {
             LOGGER.debug("JSON Data: " + jsonGraph);
             return "";
     }
+
+    public String getVersionCountYearly(String url){
+        jsonHandler = new JSONHandler(false);
+        String response = jsonHandler.getVersionCountYearly(url);
+        return response;
+    }
+
+    public String getVersionCountMonthly(String url, int year){
+        jsonHandler = new JSONHandler(false);
+        String response = jsonHandler.getVersionCountMonthly(url, year);
+        return response;
+    }
+
+    public String getVersionCountDaily(String url, int year, int month){
+        jsonHandler = new JSONHandler(false);
+        String response = jsonHandler.getVersionCountDaily(url, year, month);
+        return response;
+    }
 }
