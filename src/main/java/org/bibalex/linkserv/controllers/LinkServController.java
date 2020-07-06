@@ -33,13 +33,15 @@ public class LinkServController {
         LOGGER.info("Updating Graph with Parameters: " + workspaceName);
         if (operation.equals(PropertiesHandler.getProperty("updateGraph"))) {
             String response = linkServService.updateGraph(jsonGraph, workspaceName);
-            if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
-                return ResponseEntity.badRequest().body("Please, Send only one VersionNode with timestamp and URL" +
+            if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus"))) {
+                LOGGER.error("Response Status: 400 - Bad Request");
+                return ResponseEntity.badRequest().body("Please, send only one VersionNode with timestamp and URL" +
                         " typical to those present in the request body.");
-            LOGGER.info("Response Status: 200");
+            }
+            LOGGER.info("Response Status: 200 - OK");
             return ResponseEntity.ok(response);
         } else {
-            LOGGER.error("Response Status: 500, Operation Not Found: " + operation);
+            LOGGER.error("Response Status: 500 - Operation Not Found: " + operation);
             throw new OperationNotFoundException(operation);
         }
     }
@@ -58,6 +60,8 @@ public class LinkServController {
         String[] urlParams = requestURL.split(PropertiesHandler.getProperty("repositoryIP"));
 
         if (urlParams.length < 2) {
+            LOGGER.error("Response Status: 400 - Bad Request");
+            LOGGER.error("Invalid URL");
             return ResponseEntity.badRequest().body("Please, send a valid URL");
         }
 
@@ -66,19 +70,26 @@ public class LinkServController {
 
             case "getGraph":
                 String response = linkServService.getGraph(workspaceName, depth);
-                if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus")))
+                if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus"))) {
+                    LOGGER.error("Response Status: 400 - Bad Request");
+                    LOGGER.error("Invalid URL");
                     return ResponseEntity.badRequest().body("Please, send a valid URL");
-                LOGGER.info("Response Status: 200");
+                }
+                LOGGER.info("Response Status: 200 - OK");
                 return ResponseEntity.ok(response);
 
             case "getVersionCountYearly":
                 if (workspaceNameHandler.validateURL(workspaceName)) {
+                    LOGGER.error("Response Status: 400 - Bad Request");
+                    LOGGER.error("Invalid URL");
                     return ResponseEntity.ok(linkServService.getVersionCountYearly(workspaceName));
                 }
                 return ResponseEntity.badRequest().body("Please, send a valid URL");
 
             case "getVersionCountMonthly":
                 if (year == null || !(workspaceNameHandler.validateURL(workspaceName))) {
+                    LOGGER.error("Response Status: 400 - Bad Request");
+                    LOGGER.error("Invalid URL or year");
                     return ResponseEntity.badRequest().body("Please, send a valid URL and year");
                 }
                 return ResponseEntity.ok(linkServService.getVersionCountMonthly(workspaceName, year));
@@ -86,6 +97,8 @@ public class LinkServController {
             case "getVersionCountDaily":
                 if (year == null || month == null || month < 1 || month > 12
                         || !(workspaceNameHandler.validateURL(workspaceName))) {
+                    LOGGER.error("Response Status: 400 - Bad Request");
+                    LOGGER.error("Invalid URL, year, or month");
                     return ResponseEntity.badRequest().body("Please, send a valid URL, year and month");
                 }
                 return ResponseEntity.ok(linkServService.getVersionCountDaily(workspaceName, year, month));
@@ -93,12 +106,16 @@ public class LinkServController {
             case "getVersions":
                 if (dateTime == null || !(dateTime.matches("[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])"))
                         || !(workspaceNameHandler.validateURL(workspaceName))) {
+                    LOGGER.error("Response Status: 400 - Bad Request");
+                    LOGGER.error("Invalid URL or date-time");
                     return ResponseEntity.badRequest().body("Please, send a valid URL and date-time");
                 }
                 return ResponseEntity.ok(linkServService.getVersions(workspaceName, dateTime));
 
             case "getLatestVersion":
                 if (workspaceNameHandler.validateURL(workspaceName)) {
+                    LOGGER.error("Response Status: 400 - Bad Request");
+                    LOGGER.error("Invalid URL");
                     return ResponseEntity.ok(linkServService.getLatestVersion(workspaceName));
                 }
                 return ResponseEntity.badRequest().body("Please, send a valid URL");

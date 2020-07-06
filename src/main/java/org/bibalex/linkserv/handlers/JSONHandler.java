@@ -35,10 +35,10 @@ public class JSONHandler {
 
         JSONObject jsonData = new JSONObject(jsonLine);
         if (!jsonData.isNull(PropertiesHandler.getProperty("addNodeKey"))) {
-            LOGGER.info("Adding Node through Line: " + jsonLine);
+            LOGGER.info("Adding node through line: " + jsonLine);
             return handleNode(jsonData, url, timestamp);
         } else {
-            LOGGER.info("Adding Edge through Line: " + jsonLine);
+            LOGGER.info("Adding edge through line: " + jsonLine);
             handleEdge(jsonData);
             return true;
         }
@@ -53,7 +53,7 @@ public class JSONHandler {
             Node node = new Node(nodeId, PropertiesHandler.getProperty("parentNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")), null);
             graphNodes.put(nodeId, node);
-            LOGGER.info("Parent Node Added: " + nodeId);
+            LOGGER.info("Node added: " + nodeId);
         } else {
             Node node = new Node(nodeId, PropertiesHandler.getProperty("versionNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")),
@@ -64,7 +64,7 @@ public class JSONHandler {
                     return false;
             }
             graphNodes.put(nodeId, node);
-            LOGGER.info("Version Node Added: " + nodeId);
+            LOGGER.info("VersionNode added: " + nodeId);
         }
         return true;
     }
@@ -88,6 +88,36 @@ public class JSONHandler {
         return runGetGraphResults(neo4jHandler.getRootNodes(url, startTimestamp, endTimestamp), depth);
     }
 
+    public ArrayList<String> getVersions(String url, String dateTime) {
+        ArrayList<Node> versionNodes = neo4jHandler.getVersions(url, dateTime);
+        ArrayList<String> nodeVersions = new ArrayList<>();
+
+        for(Node versionNode: versionNodes){
+            nodeVersions.add(versionNode.getTimestamp());
+        }
+        return nodeVersions;
+    }
+
+    public ArrayList<String> getLatestVersion(String url) {
+        Node latestVersionNode = neo4jHandler.getLatestVersion(url).get(0);
+        return getGraph(latestVersionNode.getUrl(), latestVersionNode.getTimestamp(), latestVersionDepth);
+    }
+
+    public Map<String, Node> getGraphNodes() {
+        return graphNodes;
+    }
+
+    public void setGraphNodes(Map<String, Node> graphNodes) {
+        this.graphNodes = graphNodes;
+    }
+
+    public ArrayList<Edge> getGraphEdges() {
+        return graphEdges;
+    }
+
+    public void setGraphEdges(ArrayList<Edge> graphEdges) {
+        this.graphEdges = graphEdges;
+    }
     private boolean validatePresenceOfAttributes(Node rootNode, int depth) {
         if (rootNode == null || depth < 1) {
             return false;
@@ -103,12 +133,13 @@ public class JSONHandler {
         for (Node rootNode : rootNodes) {
             if (!validatePresenceOfAttributes(rootNode, depth)) {
                 getGraphResults.add(new JSONObject().toString());
-                LOGGER.info("No Results Found or Invalid Depth");
+                LOGGER.info("No results found, or invalid depth");
                 return getGraphResults;
             }
 
             /** get the actual timestamp of the returned root node in case of approximation later on,
-             where the given timestamp of the request is not necessarily equal to the actual one returned.**/
+             * where the given timestamp of the request is not necessarily equal to the actual one returned.**/
+
             nodeVersion = rootNode.getTimestamp();
             nodesNames.add(rootNode.getUrl());
             getGraphResults.add(addNodeToResults(rootNode));
@@ -211,36 +242,5 @@ public class JSONHandler {
             histogramJson.put(String.valueOf(histogramEntry.getKey()), histogramEntry.getCount());
         }
         return histogramJson.toString();
-    }
-
-    public ArrayList<String> getVersions(String url, String dateTime) {
-        ArrayList<Node> versionNodes = neo4jHandler.getVersions(url, dateTime);
-        ArrayList<String> nodeVersions = new ArrayList<>();
-
-        for(Node versionNode: versionNodes){
-            nodeVersions.add(versionNode.getTimestamp());
-        }
-        return nodeVersions;
-    }
-
-    public ArrayList<String> getLatestVersion(String url) {
-        Node latestVersionNode = neo4jHandler.getLatestVersion(url).get(0);
-        return getGraph(latestVersionNode.getUrl(), latestVersionNode.getTimestamp(), latestVersionDepth);
-    }
-
-    public Map<String, Node> getGraphNodes() {
-        return graphNodes;
-    }
-
-    public void setGraphNodes(Map<String, Node> graphNodes) {
-        this.graphNodes = graphNodes;
-    }
-
-    public ArrayList<Edge> getGraphEdges() {
-        return graphEdges;
-    }
-
-    public void setGraphEdges(ArrayList<Edge> graphEdges) {
-        this.graphEdges = graphEdges;
     }
 }
