@@ -27,7 +27,7 @@ public class WorkspaceNameHandler {
         return workspaceParameters;
     }
 
-    private boolean validateURL(String url){
+    public boolean validateURL(String url){
         if (url.matches("(?:https?:\\/\\/)?(?:[^?\\/\\s]+[?\\/])(.*)"))
                 return true;
         return false;
