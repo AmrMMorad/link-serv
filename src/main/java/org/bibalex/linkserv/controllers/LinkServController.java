@@ -46,6 +46,7 @@ public class LinkServController {
         }
     }
 
+    @CrossOrigin
     @RequestMapping(method = RequestMethod.GET, value = "/**")
     public ResponseEntity<String> getOperations(HttpServletRequest request,
                                                 @RequestParam String operation,

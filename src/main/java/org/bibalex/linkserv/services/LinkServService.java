@@ -92,10 +92,7 @@ public class LinkServService {
             graphArray = jsonHandler.getGraph(url, timestamp, depth);
         }
 
-        HashSet<String> uniqueGraphArray = new HashSet<>();
-        uniqueGraphArray.addAll(graphArray);
-
-        return formulateResponse(new ArrayList<>(uniqueGraphArray), "\n");
+        return formulateResponse(graphArray, "\r\n");
     }
 
     public String getVersions(String url, String dateTime) {
@@ -107,7 +104,7 @@ public class LinkServService {
     public String getLatestVersion(String url) {
         jsonHandler = new JSONHandler(false);
         ArrayList<String> reponseStringArray = jsonHandler.getLatestVersion(url);
-        return formulateResponse(reponseStringArray, "\n");
+        return formulateResponse(reponseStringArray, "\r\n");
     }
 
     public String getVersionCountYearly(String url) {
@@ -132,8 +129,12 @@ public class LinkServService {
     }
 
     private String formulateResponse(ArrayList<String> stringResponse, String delimiter) {
-        String response = stringResponse.remove(0);
-        for (String responseObject : stringResponse) {
+        HashSet<String> uniqueGraphHashSet = new HashSet<>();
+        uniqueGraphHashSet.addAll(stringResponse);
+        ArrayList<String> uniqueGraphArray = new ArrayList<>(uniqueGraphHashSet);
+
+        String response = uniqueGraphArray.remove(0);
+        for (String responseObject : uniqueGraphArray) {
             response += delimiter + responseObject;
         }
         if (response.isEmpty()) {
