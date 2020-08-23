@@ -3,7 +3,7 @@ package org.bibalex.linkserv.services;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bibalex.linkserv.handlers.JSONHandler;
-import org.bibalex.linkserv.handlers.Neo4jHandler;
+import org.bibalex.linkserv.handlers.ArangoDBHandler;
 import org.bibalex.linkserv.handlers.PropertiesHandler;
 import org.bibalex.linkserv.handlers.WorkspaceNameHandler;
 
@@ -17,7 +17,7 @@ import java.util.Map;
 public class LinkServService {
 
     private WorkspaceNameHandler workspaceNameHandler = new WorkspaceNameHandler();
-    private Neo4jHandler neo4jHandler = new Neo4jHandler();
+    private ArangoDBHandler arangoDBHandler = new ArangoDBHandler();
     private JSONHandler jsonHandler;
 
     private static final Logger LOGGER = LogManager.getLogger(LinkServService.class);
@@ -51,7 +51,7 @@ public class LinkServService {
                     return PropertiesHandler.getProperty("badRequestResponseStatus");
             }
         }
-        done = neo4jHandler.addNodesAndRelationships(jsonHandler.getGraphNodes(), jsonHandler.getGraphEdges());
+        done = arangoDBHandler.addNodesAndRelationships(jsonHandler.getGraphNodes(), jsonHandler.getGraphEdges());
         if (done) {
             jsonGraph = jsonGraph.replace("=", "");
             jsonGraph = jsonGraph.replace("\\r", "");

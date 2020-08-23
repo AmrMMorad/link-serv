@@ -1,5 +1,11 @@
 package org.bibalex.linkserv.handlers;
 
+import com.arangodb.ArangoDB;
+import com.arangodb.ArangoDatabase;
+import com.arangodb.ArangoGraph;
+import com.arangodb.entity.BaseDocument;
+import com.arangodb.entity.EdgeDefinition;
+import com.arangodb.model.GraphCreateOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bibalex.linkserv.models.Edge;
@@ -8,16 +14,13 @@ import org.bibalex.linkserv.models.Node;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.neo4j.driver.Values.parameters;
 
-public class Neo4jHandler {
+public class ArangoDBHandler {
 
-    private static final Logger LOGGER = LogManager.getLogger(Neo4jHandler.class);
+    private static final Logger LOGGER = LogManager.getLogger(ArangoDBHandler.class);
     private String versionNodeLabel;
     private String parentNodeLabel;
     private String linkRelationshipType;
@@ -25,7 +28,10 @@ public class Neo4jHandler {
     private String query;
     private Value parameterValues;
 
-    public Neo4jHandler() {
+    private ArangoDatabase linkData = getArangoDataBase();
+    private ArangoGraph linkDataGraph = linkData.graph("link-data-graph");
+
+    public ArangoDBHandler() {
         this.versionNodeLabel = PropertiesHandler.getProperty("versionNodeLabel");
         this.parentNodeLabel = PropertiesHandler.getProperty("parentNodeLabel");
         this.linkRelationshipType = PropertiesHandler.getProperty("linkRelationshipType");
@@ -37,6 +43,31 @@ public class Neo4jHandler {
             session = driver.session();
         }
         return session;
+    }
+
+    private ArangoDatabase getArangoDataBase() {
+        ArangoDB arangoDB = new ArangoDB.Builder().user("root").password("root").build();
+        // check if link-data is present, and create one if not
+        linkData = arangoDB.db("link-data").exists() ? arangoDB.db("link-data") : createLinkDataGraph(arangoDB);
+        return linkData;
+    }
+
+    private ArangoDatabase createLinkDataGraph(ArangoDB arangoDB) {
+        arangoDB.db("link-data").create();
+        linkData = arangoDB.db("link-data");
+        EdgeDefinition linkedToEdgeDefinition = new EdgeDefinition()
+                .collection("LinkedTo")
+                .from("Nodes")
+                .to("Nodes");
+        linkData.createGraph("link-data-graph",
+                new ArrayList<>(Arrays.asList(new EdgeDefinition[] {linkedToEdgeDefinition})),
+                new GraphCreateOptions().numberOfShards(9).smartGraphAttribute("url" ));
+        linkDataGraph = linkData.graph("link-data-graph");
+        return linkData;
+    }
+
+    public boolean addVerticesAndEdges(Map<String, Node> graphNodes, ArrayList<Edge> graphEdges) {
+        return true;
     }
 
     //get the root node of the exact given timestamp
@@ -81,7 +112,7 @@ public class Neo4jHandler {
         return runGetNodeQuery(query, parameterValues);
     }
 
-    private ArrayList<Node> runGetNodeQuery(String query, Value parameterValues){
+    private ArrayList<Node> runGetNodeQuery(String query, Value parameterValues) {
         ArrayList<Node> resultNodes = new ArrayList<>();
         Node resultNode;
 
@@ -156,7 +187,7 @@ public class Neo4jHandler {
             }
             result = addOneNodeWithItsOutlinks(entry, graphNodes);
         }
-        // if there are nodes not connected with edges
+        // if there are nodes not connected to edges
         for (Map.Entry<String, Node> entry : graphNodes.entrySet()) {
             if (!result) {
                 LOGGER.info("Could not update graph");
@@ -200,18 +231,21 @@ public class Neo4jHandler {
     }
 
     private boolean neo4jAddNodeWithOutlinks(String url, String timestamp, ArrayList<String> outlinks) {
-        Value parameters = parameters("url", url, "timestamp", timestamp, "outlinks", convertArrayToJSONArray(outlinks));
-        String query = "CALL linkserv." + PropertiesHandler.getProperty("addNodesAndRelationshipsProcedure")
-                + "($url,$timestamp,$outlinks)";
+        System.out.println("&&&&&&&&&&&&&&&&&\n" + url);
+        System.out.println(timestamp);
+        BaseDocument vertex = new BaseDocument();
+        vertex.addAttribute("url", url);
+        vertex.addAttribute("timestamp", timestamp);
+        linkDataGraph.vertexCollection("Nodes").insertVertex(vertex);
+        System.out.println("!!!!!!!!!!!!!! \n ADD VERTEX !!!!!!!!!!");
+        List<BaseDocument> outlinksVertices = new ArrayList<>();
+        for( String outlinkURL : outlinks){
+            BaseDocument outlinkVertex = new BaseDocument();
+            outlinkVertex.addAttribute("url", outlinkURL);
+            outlinkVertex.addAttribute("timestamp", timestamp);
 
-        Result result = getSession().run(query, parameters);
-        if (result.hasNext()) {
-            LOGGER.info("Node with url: " + url + " and timestamp: " + timestamp + " has been successfully added");
-            return true;
-        } else {
-            LOGGER.info("Could not add node with url: " + url + " and timestamp: " + timestamp);
-            return false;
         }
+        return true;
     }
 
     private String convertValueToString(Value value) {
@@ -235,11 +269,11 @@ public class Neo4jHandler {
         return true;
     }
 
-    private ArrayList<HistogramEntry> getNeo4jResultAndCovertToHistogram(Value parameters, String query){
+    private ArrayList<HistogramEntry> getNeo4jResultAndCovertToHistogram(Value parameters, String query) {
         ArrayList<HistogramEntry> histogramEntries = new ArrayList<>();
         Result result = getSession().run(query, parameters);
 
-        while(result.hasNext()){
+        while (result.hasNext()) {
             Record histogramRecord = result.next();
             HistogramEntry histogramEntry = new HistogramEntry(histogramRecord.get("key").asInt(),
                     histogramRecord.get("count").asInt());

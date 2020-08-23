@@ -16,7 +16,7 @@ public class JSONHandler {
     private static final int DEFAULT_ATTRIBUTE_VALUE = 1;
     private static final Logger LOGGER = LogManager.getLogger(JSONHandler.class);
     int versionNodesCount;
-    private Neo4jHandler neo4jHandler;
+    private ArangoDBHandler arangoDBHandler;
     private Map<String, Node> graphNodes;
     private ArrayList<Edge> graphEdges;
     private boolean multipleURLs;
@@ -24,7 +24,7 @@ public class JSONHandler {
     private int latestVersionDepth = Integer.parseInt(PropertiesHandler.getProperty("latestVersionDepth"));
 
     public JSONHandler(boolean multipleURLs) {
-        this.neo4jHandler = new Neo4jHandler();
+        this.arangoDBHandler = new ArangoDBHandler();
         this.graphNodes = new HashMap<>();
         this.graphEdges = new ArrayList<>();
         this.multipleURLs = multipleURLs;
@@ -81,15 +81,15 @@ public class JSONHandler {
     }
 
     public ArrayList<String> getGraph(String url, String timestamp, Integer depth) {
-        return runGetGraphResults(neo4jHandler.getRootNode(url, timestamp), depth);
+        return runGetGraphResults(arangoDBHandler.getRootNode(url, timestamp), depth);
     }
 
     public ArrayList<String> getGraph(String url, String startTimestamp, String endTimestamp, Integer depth) {
-        return runGetGraphResults(neo4jHandler.getRootNodes(url, startTimestamp, endTimestamp), depth);
+        return runGetGraphResults(arangoDBHandler.getRootNodes(url, startTimestamp, endTimestamp), depth);
     }
 
     public ArrayList<String> getVersions(String url, String dateTime) {
-        ArrayList<Node> versionNodes = neo4jHandler.getVersions(url, dateTime);
+        ArrayList<Node> versionNodes = arangoDBHandler.getVersions(url, dateTime);
         ArrayList<String> nodeVersions = new ArrayList<>();
 
         for(Node versionNode: versionNodes){
@@ -99,7 +99,7 @@ public class JSONHandler {
     }
 
     public ArrayList<String> getLatestVersion(String url) {
-        Node latestVersionNode = neo4jHandler.getLatestVersion(url).get(0);
+        Node latestVersionNode = arangoDBHandler.getLatestVersion(url).get(0);
         return getGraph(latestVersionNode.getUrl(), latestVersionNode.getTimestamp(), latestVersionDepth);
     }
 
@@ -156,7 +156,7 @@ public class JSONHandler {
 
         ArrayList<String> outlinkNodes = new ArrayList<>();
         for (String nodeName : nodesNames) {
-            ArrayList<Object> outlinkData = neo4jHandler.getOutlinkNodes(nodeName, nodeVersion);
+            ArrayList<Object> outlinkData = arangoDBHandler.getOutlinkNodes(nodeName, nodeVersion);
             for (Object nodeMap : outlinkData) {
                 if (nodeMap.getClass() == Node.class) {
                     getGraphResults.add(addNodeToResults((Node) nodeMap));
@@ -220,19 +220,19 @@ public class JSONHandler {
 
     public String getVersionCountYearly(String url) {
 
-        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountYearly(url);
+        ArrayList<HistogramEntry> histogramEntries = arangoDBHandler.getVersionCountYearly(url);
         return convertHistogramArrayToJson(histogramEntries);
     }
 
     public String getVersionCountMonthly(String url, int year) {
 
-        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountMonthly(url, year);
+        ArrayList<HistogramEntry> histogramEntries = arangoDBHandler.getVersionCountMonthly(url, year);
         return convertHistogramArrayToJson(histogramEntries);
     }
 
     public String getVersionCountDaily(String url, int year, int month) {
 
-        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountDaily(url, year, month);
+        ArrayList<HistogramEntry> histogramEntries = arangoDBHandler.getVersionCountDaily(url, year, month);
         return convertHistogramArrayToJson(histogramEntries);
     }
 

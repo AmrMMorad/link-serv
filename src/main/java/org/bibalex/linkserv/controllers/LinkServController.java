@@ -30,7 +30,7 @@ public class LinkServController {
         String requestURL = request.getRequestURL().toString();
         String[] urlParams = requestURL.split(PropertiesHandler.getProperty("repositoryIP"));
         String workspaceName = ((urlParams.length == 1) ? "*" : urlParams[1]);
-        LOGGER.info("Updating Graph with Parameters: " + workspaceName);
+        LOGGER.info("Updating graph with parameters: " + workspaceName);
         if (operation.equals(PropertiesHandler.getProperty("updateGraph"))) {
             String response = linkServService.updateGraph(jsonGraph, workspaceName);
             if (response.equals(PropertiesHandler.getProperty("badRequestResponseStatus"))) {
