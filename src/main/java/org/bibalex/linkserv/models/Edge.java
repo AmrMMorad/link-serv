@@ -14,6 +14,8 @@ public class Edge {
         this.target = target;
     }
 
+    public Edge(){}
+
     public String getId() {
         return id;
     }

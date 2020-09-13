@@ -13,6 +13,8 @@ public class Node {
         this.timestamp = timestamp;
     }
 
+    public Node(){}
+
     public String getId() {
         return id;
     }

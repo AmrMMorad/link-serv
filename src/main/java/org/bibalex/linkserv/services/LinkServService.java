@@ -129,12 +129,11 @@ public class LinkServService {
     }
 
     private String formulateResponse(ArrayList<String> stringResponse, String delimiter) {
-        HashSet<String> uniqueGraphHashSet = new HashSet<>();
-        uniqueGraphHashSet.addAll(stringResponse);
-        ArrayList<String> uniqueGraphArray = new ArrayList<>(uniqueGraphHashSet);
+        if(stringResponse.isEmpty())
+            return "";
 
-        String response = uniqueGraphArray.remove(0);
-        for (String responseObject : uniqueGraphArray) {
+        String response = stringResponse.remove(0);
+        for (String responseObject : stringResponse) {
             response += delimiter + responseObject;
         }
         if (response.isEmpty()) {

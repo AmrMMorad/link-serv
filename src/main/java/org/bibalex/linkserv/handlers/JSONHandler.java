@@ -1,5 +1,7 @@
 package org.bibalex.linkserv.handlers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bibalex.linkserv.models.Edge;
@@ -7,10 +9,7 @@ import org.bibalex.linkserv.models.HistogramEntry;
 import org.bibalex.linkserv.models.Node;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class JSONHandler {
 
@@ -22,6 +21,7 @@ public class JSONHandler {
     private ArrayList<Edge> graphEdges;
     private boolean multipleURLs;
     private ArrayList<String> getGraphResults;
+    private HashSet<String> getGraphResultsHashSet;
     private int latestVersionDepth = Integer.parseInt(PropertiesHandler.getProperty("latestVersionDepth"));
 
     public JSONHandler(boolean multipleURLs) {
@@ -56,10 +56,10 @@ public class JSONHandler {
             graphNodes.put(nodeId, node);
             LOGGER.info("Node added: " + nodeId);
         } else {
+            versionNodesCount++;
             Node node = new Node(nodeId, PropertiesHandler.getProperty("versionNodeLabel"),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("nameKey")),
                     JsonNodeProperties.getString(PropertiesHandler.getProperty("versionKey")));
-            versionNodesCount++;
             if (!multipleURLs) {
                 if (versionNodesCount > 1 || !node.getTimestamp().equals(timestamp) || !node.getUrl().equals(url))
                     return false;
@@ -100,8 +100,29 @@ public class JSONHandler {
     }
 
     public ArrayList<String> getLatestVersion(String url) {
-        Node latestVersionNode = neo4jHandler.getLatestVersion(url).get(0);
+        ArrayList<Node> latestVersionNodes  = neo4jHandler.getLatestVersion(url);
+        if(latestVersionNodes.isEmpty())
+            return new ArrayList<>();
+        Node latestVersionNode = latestVersionNodes.get(0);
         return getGraph(latestVersionNode.getUrl(), latestVersionNode.getTimestamp(), latestVersionDepth);
+    }
+
+    public String getVersionCountYearly(String url) {
+
+        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountYearly(url);
+        return convertHistogramArrayToJson(histogramEntries);
+    }
+
+    public String getVersionCountMonthly(String url, int year) {
+
+        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountMonthly(url, year);
+        return convertHistogramArrayToJson(histogramEntries);
+    }
+
+    public String getVersionCountDaily(String url, int year, int month) {
+
+        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountDaily(url, year, month);
+        return convertHistogramArrayToJson(histogramEntries);
     }
 
     public Map<String, Node> getGraphNodes() {
@@ -119,6 +140,7 @@ public class JSONHandler {
     public void setGraphEdges(ArrayList<Edge> graphEdges) {
         this.graphEdges = graphEdges;
     }
+
     private boolean validatePresenceOfAttributes(Node rootNode, int depth) {
         if (rootNode == null || depth < 1) {
             return false;
@@ -127,7 +149,9 @@ public class JSONHandler {
     }
 
     private ArrayList<String> runGetGraphResults(ArrayList<Node> rootNodes, int depth) {
+        getGraphResultsHashSet = new HashSet<>();
         getGraphResults = new ArrayList<>();
+
         String nodeVersion = "";
         ArrayList<String> nodesNames = new ArrayList<>();
 
@@ -143,14 +167,13 @@ public class JSONHandler {
 
             nodeVersion = rootNode.getTimestamp();
             nodesNames.add(rootNode.getUrl());
-            getGraphResults.add(addNodeToResults(rootNode));
+            getGraphResultsHashSet.add(new JSONObject(rootNode).toString());
 
             for (int i = 0; i < depth; i++) {
                 nodesNames = getOutlinkNodes(nodesNames, nodeVersion);
             }
         }
-
-        return getGraphResults;
+        return convertObjectStringToJSONString(getGraphResultsHashSet);
     }
 
     private ArrayList<String> getOutlinkNodes(ArrayList<String> nodesNames, String nodeVersion) {
@@ -159,14 +182,33 @@ public class JSONHandler {
         for (String nodeName : nodesNames) {
             ArrayList<Object> outlinkData = neo4jHandler.getOutlinkNodes(nodeName, nodeVersion);
             for (Object nodeMap : outlinkData) {
-                if (nodeMap.getClass() == Node.class) {
-                    getGraphResults.add(addNodeToResults((Node) nodeMap));
+                getGraphResultsHashSet.add(new JSONObject(nodeMap).toString());
+                if (nodeMap.getClass() == Node.class)
                     outlinkNodes.add(((Node) nodeMap).getUrl());
-                } else
-                    getGraphResults.add(addEdgeToResults((Edge) nodeMap));
             }
         }
         return outlinkNodes;
+    }
+
+    private ArrayList<String> convertObjectStringToJSONString(HashSet<String> graphResults){
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            for (String nodeMap : graphResults) {
+                if (nodeMap.contains(PropertiesHandler.getProperty("nameKey"))) {
+                    Node node = objectMapper.readValue(nodeMap, Node.class);
+                    getGraphResults.add(addNodeToResults(node));
+                } else {
+                    Edge edge = objectMapper.readValue(nodeMap, Edge.class);
+                    getGraphResults.add(addEdgeToResults(edge));
+                }
+            }
+        }
+        catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return getGraphResults;
     }
 
     private String addNodeToResults(Node node) {
@@ -225,24 +267,6 @@ public class JSONHandler {
         }
 
         return nodeData;
-    }
-
-    public String getVersionCountYearly(String url) {
-
-        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountYearly(url);
-        return convertHistogramArrayToJson(histogramEntries);
-    }
-
-    public String getVersionCountMonthly(String url, int year) {
-
-        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountMonthly(url, year);
-        return convertHistogramArrayToJson(histogramEntries);
-    }
-
-    public String getVersionCountDaily(String url, int year, int month) {
-
-        ArrayList<HistogramEntry> histogramEntries = neo4jHandler.getVersionCountDaily(url, year, month);
-        return convertHistogramArrayToJson(histogramEntries);
     }
 
     private String convertHistogramArrayToJson(ArrayList<HistogramEntry> histogramEntries) {
