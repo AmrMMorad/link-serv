@@ -114,8 +114,7 @@ public class Neo4jHandler {
             Record resultRecord = result.next();
             Boolean isParent = convertValueToString(resultRecord.get("outlinkVersion")).equalsIgnoreCase("NULL");
 
-            Node outlinkNode = new Node(isParent ? convertValueToString(resultRecord.get("parentId")) :
-                    convertValueToString(resultRecord.get("outlinkVersionId")),
+            Node outlinkNode = new Node(convertValueToString(resultRecord.get("parentId")) ,
                     isParent ? parentNodeLabel : versionNodeLabel,
                     convertValueToString(resultRecord.get("outlinkName")),
                     isParent ? "" : convertValueToString(resultRecord.get("outlinkVersion")));
@@ -123,8 +122,7 @@ public class Neo4jHandler {
             Edge outlinkEdge = new Edge(convertValueToString(resultRecord.get("relationshipId")),
                     linkRelationshipType,
                     convertValueToString(resultRecord.get("parentVersionId")),
-                    isParent ? convertValueToString(resultRecord.get("parentId")) :
-                            convertValueToString(resultRecord.get("outlinkVersionId")));
+                    convertValueToString(resultRecord.get("parentId")));
 
             outlinkEntities.add(outlinkNode);
             outlinkEntities.add(outlinkEdge);
