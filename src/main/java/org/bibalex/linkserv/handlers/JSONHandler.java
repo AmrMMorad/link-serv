@@ -15,21 +15,20 @@ public class JSONHandler {
 
     private static final int DEFAULT_ATTRIBUTE_VALUE = 0;
     private static final Logger LOGGER = LogManager.getLogger(JSONHandler.class);
+    private Neo4jHandler neo4jHandler = new Neo4jHandler();
     int versionNodesCount;
-    private Neo4jHandler neo4jHandler;
     private Map<String, Node> graphNodes;
     private ArrayList<Edge> graphEdges;
     private boolean multipleURLs;
     private ArrayList<String> getGraphResults;
     private HashSet<String> getGraphResultsHashSet;
-    private int latestVersionDepth = Integer.parseInt(PropertiesHandler.getProperty("latestVersionDepth"));
+    private int latestVersionDepth;
 
-    public JSONHandler(boolean multipleURLs) {
-        this.neo4jHandler = new Neo4jHandler();
-        this.graphNodes = new HashMap<>();
-        this.graphEdges = new ArrayList<>();
-        this.multipleURLs = multipleURLs;
-        this.versionNodesCount = 0;
+    public void initialize(boolean multipleURLsVariable){
+        graphNodes = new HashMap<>();
+        graphEdges = new ArrayList<>();
+        multipleURLs = multipleURLsVariable;
+        versionNodesCount = 0;
     }
 
     public boolean addNodesAndEdgesFromJSONLine(String jsonLine, String url, String timestamp) {
@@ -100,6 +99,7 @@ public class JSONHandler {
     }
 
     public ArrayList<String> getLatestVersion(String url) {
+        latestVersionDepth = Integer.parseInt(PropertiesHandler.getProperty("latestVersionDepth"));
         ArrayList<Node> latestVersionNodes  = neo4jHandler.getLatestVersion(url);
         if(latestVersionNodes.isEmpty())
             return new ArrayList<>();
