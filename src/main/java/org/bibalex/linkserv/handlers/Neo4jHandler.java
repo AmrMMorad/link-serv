@@ -24,6 +24,7 @@ public class Neo4jHandler {
     private Session session;
     private String query;
     private Value parameterValues;
+    private Driver driver;
 
     public Neo4jHandler() {
         this.versionNodeLabel = PropertiesHandler.getProperty("versionNodeLabel");
@@ -33,7 +34,10 @@ public class Neo4jHandler {
 
     public Session getSession() {
         if (session == null || !session.isOpen()) {
-            Driver driver = GraphDatabase.driver(PropertiesHandler.getProperty("uri"));
+            if (driver != null) {
+                driver.close();
+            }
+            driver = GraphDatabase.driver(PropertiesHandler.getProperty("uri"));
             session = driver.session();
         }
         return session;
@@ -68,7 +72,6 @@ public class Neo4jHandler {
         parameterValues = parameters("url", url, "dateTime", dateTime);
         query = "CALL linkserv." + PropertiesHandler.getProperty("getVersionsProcedure") +
                 "($url, $dateTime);";
-
         return runGetNodeQuery(query, parameterValues);
     }
 
@@ -81,7 +84,7 @@ public class Neo4jHandler {
         return runGetNodeQuery(query, parameterValues);
     }
 
-    private ArrayList<Node> runGetNodeQuery(String query, Value parameterValues){
+    private ArrayList<Node> runGetNodeQuery(String query, Value parameterValues) {
         ArrayList<Node> resultNodes = new ArrayList<>();
         Node resultNode;
 
@@ -235,11 +238,11 @@ public class Neo4jHandler {
         return true;
     }
 
-    private ArrayList<HistogramEntry> getNeo4jResultAndCovertToHistogram(Value parameters, String query){
+    private ArrayList<HistogramEntry> getNeo4jResultAndCovertToHistogram(Value parameters, String query) {
         ArrayList<HistogramEntry> histogramEntries = new ArrayList<>();
         Result result = getSession().run(query, parameters);
 
-        while(result.hasNext()){
+        while (result.hasNext()) {
             Record histogramRecord = result.next();
             HistogramEntry histogramEntry = new HistogramEntry(histogramRecord.get("key").asInt(),
                     histogramRecord.get("count").asInt());
